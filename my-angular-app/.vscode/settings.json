@@ -1,0 +1,17 @@
+{
+  "typescript.suggest.autoImports": true,
+  "javascript.suggest.autoImports": true,
+  "typescript.suggest.completeFunctionCalls": true,
+  "typescript.tsdk": "node_modules\\typescript\\lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": true
+  },
+  "editor.formatOnSave": true,
+  "files.exclude": {
+    "**/.git": true,
+    "**/node_modules": true
+  }
+}
