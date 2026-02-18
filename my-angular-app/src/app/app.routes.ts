@@ -3,8 +3,7 @@ import { ListHotel } from './Pages/hotel/list/list-hotel';
 
 
 export const routes: Routes = [
-  { path: '', component: Main },
+  { path: '', component: ListHotel },
   { path: 'hotels', component: ListHotel },
-  { path: 'hotels/:id', component: DetailHotel },
   { path: '**', redirectTo: '' }
 ];
