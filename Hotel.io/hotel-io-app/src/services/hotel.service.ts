@@ -92,6 +92,14 @@ export class HotelService {
     this.hotelsSignal.update(hotels => [newHotel, ...hotels]);
   }
 
+  updateHotel(updateHotel:Hotel){
+    this.hotelsSignal.update(hotels => hotels.map(h => h.id === updateHotel.id ? updateHotel : h));
+  }
+
+  deleteHotel(id:string){
+    this.hotelsSignal.update(hotels => hotels.filter(h => h.id !== id));
+  }
+  
   toggleLike(hotelId: string) {
     this.hotelsSignal.update(hotels =>
       hotels.map(h => {

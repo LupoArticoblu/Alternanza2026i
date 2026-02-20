@@ -3,13 +3,15 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Hotel, HotelService } from './services/hotel.service';
 import { HotelDetailComponent } from './components/hotel-detail.component';
+import { LoginUserComponent } from './components/login-user.component';
+import { LoginHostComponent } from './components/login-host.component';
 
-type ViewMode = 'list' | 'create' | 'detail';
+type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, HotelDetailComponent],
+  imports: [CommonModule, FormsModule, HotelDetailComponent, LoginUserComponent, LoginHostComponent],
   template: `
     <div class="min-h-screen flex flex-col">
       <!-- Navbar -->
@@ -19,22 +21,28 @@ type ViewMode = 'list' | 'create' | 'detail';
              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
             </svg>
-            <span class="text-xl font-bold tracking-tight">BookGenius</span>
+            <span class="text-xl font-bold tracking-tight">Hotel.io</span>
           </div>
-          <button 
-            (click)="setView('create')"
-            class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2 border border-white/20">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            List Your Property
-          </button>
+          <div class="flex items-center gap-2">
+            <button (click)="setView('login-user')" class="text-white text-sm hover:underline px-2">User</button>
+            <button (click)="setView('login-host')" class="text-white text-sm hover:underline px-2 border-l border-white/30">Host</button>
+          </div>
+
         </div>
       </nav>
 
       <!-- Main Content -->
       <main class="flex-grow container mx-auto p-4 md:p-6">
-        
+        <!-- View: Login Host -->
+@if (currentView() === 'login-host') {
+  <app-login-host (close)="setView('list')" />
+}
+
+<!-- View: Login User -->
+@if (currentView() === 'login-user') {
+  <app-login-user (close)="setView('list')" />
+}
+
         <!-- View: List Hotels -->
         @if (currentView() === 'list') {
           <div class="space-y-6 animate-fade-in">
@@ -100,78 +108,6 @@ type ViewMode = 'list' | 'create' | 'detail';
           </div>
         }
 
-        <!-- View: Create Hotel -->
-        @if (currentView() === 'create') {
-          <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-100">
-            <div class="flex items-center justify-between mb-8">
-              <h2 class="text-2xl font-bold text-gray-800">List Your Property</h2>
-              <button (click)="setView('list')" class="text-gray-500 hover:text-gray-700">Cancel</button>
-            </div>
-            
-            <div class="space-y-6">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Property Name</label>
-                <input 
-                  type="text" 
-                  [(ngModel)]="newHotel.name"
-                  class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border"
-                  placeholder="e.g. Sunset Villa"
-                >
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                <input 
-                  type="text" 
-                  [(ngModel)]="newHotel.location"
-                  class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border"
-                  placeholder="e.g. Paris, France"
-                >
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Price per Night ($)</label>
-                <input 
-                  type="number" 
-                  [(ngModel)]="newHotel.price"
-                  class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border"
-                  placeholder="100"
-                >
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea 
-                  rows="3"
-                  [(ngModel)]="newHotel.description"
-                  class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border"
-                  placeholder="Describe what makes your property special..."
-                ></textarea>
-              </div>
-
-               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-                <input 
-                  type="text" 
-                  [(ngModel)]="newHotel.imageUrl"
-                  class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border"
-                  placeholder="https://..."
-                >
-                <p class="text-xs text-gray-500 mt-1">Leave empty for a random image.</p>
-              </div>
-
-              <div class="pt-4">
-                <button 
-                  (click)="createHotel()"
-                  [disabled]="!isValidHotel()"
-                  class="w-full bg-[#003580] text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-800 transition-colors shadow-lg shadow-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
-                  Create Listing
-                </button>
-              </div>
-            </div>
-          </div>
-        }
-
         <!-- View: Detail -->
         @if (currentView() === 'detail' && selectedHotel()) {
            <app-hotel-detail 
@@ -206,14 +142,6 @@ export class AppComponent {
     this.hotels().find(h => h.id === this.selectedHotelId()) || null
   );
 
-  newHotel = {
-    name: '',
-    location: '',
-    description: '',
-    price: null as number | null,
-    imageUrl: ''
-  };
-
   constructor(private hotelService: HotelService) {}
 
   setView(view: ViewMode) {
@@ -238,35 +166,5 @@ export class AppComponent {
     const sum = hotel.reviews.reduce((acc, r) => acc + r.rating, 0);
     return (sum / hotel.reviews.length).toFixed(1);
   }
-
-  isValidHotel(): boolean {
-    return !!(
-      this.newHotel.name &&
-      this.newHotel.location &&
-      this.newHotel.description &&
-      this.newHotel.price
-    );
-  }
-
-  createHotel() {
-    if (!this.isValidHotel()) return;
-
-    this.hotelService.addHotel({
-      name: this.newHotel.name,
-      location: this.newHotel.location,
-      description: this.newHotel.description,
-      price: this.newHotel.price || 0,
-      imageUrl: this.newHotel.imageUrl || `https://picsum.photos/800/600?random=${Math.floor(Math.random() * 1000)}`
-    });
-
-    this.newHotel = {
-      name: '',
-      location: '',
-      description: '',
-      price: null,
-      imageUrl: ''
-    };
     
-    this.setView('list');
-  }
 }
