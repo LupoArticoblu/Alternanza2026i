@@ -37,49 +37,8 @@ export interface Hotel {
 export class HotelService {
   private http = inject(HttpClient);
   private apiUrl = 'http://localhost:8000'; //indirizzo fast api backend
-  
-  // private hotelsSignal = signal<Hotel[]>([
-  //   {
-  //     id: '1',
-  //     name: 'Grand Plaza Resort',
-  //     location: 'Florence, Italy',
-  //     description: 'Experience luxury in the heart of Tuscany with breathtaking views and world-class amenities.',
-  //     price: 350,
-  //     imageUrl: 'https://picsum.photos/id/10/800/600',
-  //     likes: 124,
-  //     isLiked: false,
-  //     reviews: [
-  //       { id: 'r1', user: 'Alice M.', comment: 'Absolutely stunning views, but the wifi was a bit slow.', rating: 4, date: '2023-10-12' },
-  //       { id: 'r2', user: 'John D.', comment: 'Service was impeccable. Best breakfast I have ever had.', rating: 5, date: '2023-11-01' },
-  //       { id: 'r3', user: 'Sarah K.', comment: 'Too expensive for what it offers. Room was smaller than expected.', rating: 3, date: '2023-11-15' }
-  //     ]
-  //   },
-  //   {
-  //     id: '2',
-  //     name: 'Seaside Paradise Inn',
-  //     location: 'Amalfi Coast, Italy',
-  //     description: 'A cozy retreat steps away from the crystal clear waters of the Mediterranean.',
-  //     price: 220,
-  //     imageUrl: 'https://picsum.photos/id/11/800/600',
-  //     likes: 89,
-  //     isLiked: false,
-  //     reviews: [
-  //       { id: 'r4', user: 'Mike R.', comment: 'Location is unbeatable. Access to the beach is direct.', rating: 5, date: '2023-09-20' },
-  //       { id: 'r5', user: 'Emily W.', comment: 'A bit noisy at night due to the nearby bar.', rating: 4, date: '2023-09-25' }
-  //     ]
-  //   },
-  //   {
-  //     id: '3',
-  //     name: 'Mountain View Lodge',
-  //     location: 'Aspen, USA',
-  //     description: 'Perfect for ski lovers. Warm fireplaces and hot cocoa included.',
-  //     price: 450,
-  //     imageUrl: 'https://picsum.photos/id/29/800/600',
-  //     likes: 210,
-  //     isLiked: true,
-  //     reviews: []
-  //   }
-  // ]);
+
+  private hotelsSignal = signal<Hotel[]>([]); //dove andranno segnati/inseriti i vari hotel
 
   fetchHotels(){
     this.http.get<Hotel[]>(`${this.apiUrl}/hotels`).subscribe(data => {
@@ -122,8 +81,7 @@ export class HotelService {
   // }
 
   updateHotel(hotel:Hotel){
-    this.http.put<Hotel>(`${this.apiUrl}/hotels/${hotel.id}
-      `,hotel).subscribe(() => this.fetchHotels());
+    this.http.put<Hotel>(`${this.apiUrl}/hotels/${hotel.id}`,hotel).subscribe(() => this.fetchHotels());
   }
 
   // deleteHotel(id:string){
