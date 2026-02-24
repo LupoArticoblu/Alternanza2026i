@@ -11,7 +11,7 @@ class UserCreate(UserBase):
 class User(UserBase):
   id: str
   class Config:
-    orm_mode = True
+    from_attributes = True
 
 class HotelBase(BaseModel):
   name:str
@@ -27,4 +27,4 @@ class Hotel(HotelBase):
   id:str
   owner_id:str
   class Config:
-    orm_mode = True
+    from_attributes = True

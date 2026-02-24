@@ -6,7 +6,7 @@ import re
 
 #normalizzazione degli id
 def normalize_id(text: str) -> str:
-  next = next.lower()
+  text = text.lower()
   text = re.sub(r'[^a-z0-9]+', '-', text)
   return text.strip('-')
 
