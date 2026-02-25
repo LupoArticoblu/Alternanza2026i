@@ -131,6 +131,11 @@ def add_review(hotel_id:str, review:schemas.ReviewCreate, user_id:str, db:Sessio
 #likes
 @app.post("/hotels/{hotel_id}/like")
 def like_hotel(hotel_id:str, user_id:str, db:Session = Depends(get_db)):
+  #limitiamo i like agli utenti
+  user = db.query(models.User).filter(models.User.id == user_id).first()
+  if not user or user.role == "host":
+    raise HTTPException(status_code=403, detail="Only guests can like hotels")
+
   #se il like è già stato inserito dall' utente non deve essere inserito di nuovo
   existing_like = db.query(models.Like).filter(models.Like.hotel_id == hotel_id, models.Like.user_id == user_id).first()
 

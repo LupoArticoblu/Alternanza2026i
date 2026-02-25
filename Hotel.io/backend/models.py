@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, Float, ForeignKey, Integer
+from sqlalchemy.orm import relationship
 from database import Base
 
 #importa il modulo re per le espressioni regolari
@@ -25,6 +26,8 @@ class Hotel(Base):
   description = Column(String)
   price = Column(Float)
   imageUrl = Column(String)
+  #relazioni con la tabella reviews
+  reviews = relationship("Review", backref="hotel", cascade= "all, delete-orphan")
   owner_id = Column(String, ForeignKey('users.id'))
   likes = Column(Integer, default=0)
 

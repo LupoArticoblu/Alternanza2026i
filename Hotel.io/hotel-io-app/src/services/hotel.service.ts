@@ -35,10 +35,16 @@ export interface Hotel {
   providedIn: 'root'
 })
 export class HotelService {
+
+  currentUser = signal<any>(null);//memorizza utente loggato
   private http = inject(HttpClient);
   private apiUrl = 'http://localhost:8000'; //indirizzo fast api backend
 
   private hotelsSignal = signal<Hotel[]>([]); //dove andranno segnati/inseriti i vari hotel
+
+  login(email: string, password: string, role: string){
+    return this.http.post(`${this.apiUrl}/login`, {email, password, role: role});
+  }
 
   fetchHotels(){
     this.http.get<Hotel[]>(`${this.apiUrl}/hotels`).subscribe(data => {
@@ -94,34 +100,13 @@ export class HotelService {
     }
   }
 
-  toggleLike(hotelId: string) {
-    this.hotelsSignal.update(hotels =>
-      hotels.map(h => {
-        if (h.id === hotelId) {
-          const isLiked = !h.isLiked;
-          return { ...h, isLiked, likes: h.likes + (isLiked ? 1 : -1) };
-        }
-        return h;
-      })
-    );
+  toggleLike(hotelId: string, user_id: string) {
+    this.http.post(`${this.apiUrl}/hotels/${hotelId}/like?user_id=${user_id}`,
+      {}).subscribe(() => this.fetchHotels());
   }
 
-  addReview(hotelId: string, review: Omit<Review, 'id' | 'date'>) {
-    const newReview: Review = {
-      ...review,
-      id: crypto.randomUUID(),
-      date: new Date().toISOString().split('T')[0]
-    };
-
-    this.hotelsSignal.update(hotels =>
-      hotels.map(h => {
-        if (h.id === hotelId) {
-          // Invalidate AI analysis if new review is added
-          return { ...h, reviews: [newReview, ...h.reviews], aiAnalysis: undefined };
-        }
-        return h;
-      })
-    );
+  addReview(hotelId: string, reviewData: any, userId: string) {
+    this.http.post(`${this.apiUrl}/hotels/${hotelId}/reviews?user_id=${userId}`, reviewData).subscribe(() => this.fetchHotels());
   }
 
   async analyzeReviews(hotelId: string) {
