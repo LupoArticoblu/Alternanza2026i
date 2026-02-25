@@ -40,4 +40,9 @@ class Review(Base):
   comment = Column(String)
   rating = Column(Float)
   date = Column(String)
-  
+
+class Like(Base):
+  __tablename__ = 'likes'
+  hotel_id = Column(String, ForeignKey('hotels.id'), primary_key=True)
+  user_id = Column(String, ForeignKey('users.id'), primary_key=True)  
+

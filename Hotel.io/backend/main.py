@@ -1,6 +1,9 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+#import moduli per gestire id recensioni e date
+from datetime import datetime
+import uuid
 
 import models, schemas, database
 from database import engine, get_db
@@ -100,3 +103,48 @@ def delete_hotel(hotel_id:str, db:Session = Depends(get_db)):
   db.delete(db_hotel)
   db.commit()
   return db_hotel
+
+#ENDPOINT RECENSIONI e LIKES
+@app.post("/hotels/{hotel_id}/reviews", response_model=schemas.Review)
+def add_review(hotel_id:str, review:schemas.ReviewCreate, user_id:str, db:Session = Depends(get_db)):
+  #verifica esistenza hotel
+  db_hotel = db.query(models.Hotel).filter(models.Hotel.id == hotel_id).first()
+  if not db_hotel:
+    raise HTTPException(status_code=404, detail="Hotel not found")
+
+  #creazione recensione
+  new_review = models.Review(
+    id=str(uuid.uuid4()), # uuid è il modulo per generare id casuali
+    hotel_id=hotel_id,
+    user=user_id,
+    # comment=review.comment,
+    # rating=review.rating, vengono sostituiti da **review.dict()
+    **review.dict(), #spacchettamento del review come dizionario
+    date=datetime.now().strftime("%Y-%m-%d")
+  )
+
+  db.add(new_review)
+  db.commit()
+  db.refresh(new_review)
+  return new_review
+
+#likes
+@app.post("/hotels/{hotel_id}/like")
+def like_hotel(hotel_id:str, user_id:str, db:Session = Depends(get_db)):
+  #se il like è già stato inserito dall' utente non deve essere inserito di nuovo
+  existing_like = db.query(models.Like).filter(models.Like.hotel_id == hotel_id, models.Like.user_id == user_id).first()
+
+  db_hotel = db.query(models.Hotel).filter(models.Hotel.id == hotel_id).first()
+  #logica toggle per i like
+  if existing_like:
+    db.delete(existing_like)
+    db_hotel.likes -= 1
+  else:
+    new_like = models.Like( hotel_id = hotel_id, user_id = user_id)
+    db.add(new_like)
+    db_hotel.likes += 1
+
+
+
+  db.commit()
+  return {"total_likes": db_hotel.likes}
