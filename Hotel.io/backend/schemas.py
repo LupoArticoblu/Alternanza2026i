@@ -1,3 +1,4 @@
+#qui inseriamo le classi per la serializzazione
 from pydantic import BaseModel, EmailStr
 from typing import Optional 
 
@@ -11,7 +12,7 @@ class UserCreate(UserBase):
 class User(UserBase):
   id: str
   class Config:
-    from_attributes = True
+    from_attributes = True #si possono usare i campi come se fossero attributi
 
 class HotelBase(BaseModel):
   name:str
@@ -26,5 +27,20 @@ class HotelCreate(HotelBase):
 class Hotel(HotelBase):
   id:str
   owner_id:str
+  likes: int
   class Config:
     from_attributes = True
+
+class ReviewBase(BaseModel): #prendiamo l'id utente dal login
+  comment: str
+  rating: float
+
+class ReviewCreate(ReviewBase):
+  pass # eredita i campi di ReviewBase
+
+class Review(ReviewBase):
+  id: str
+  hotel_id: str
+  user_id: str
+  class Config:
+    from_attributes = True 

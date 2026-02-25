@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, ForeignKey
+from sqlalchemy import Column, String, Float, ForeignKey, Integer
 from database import Base
 
 #importa il modulo re per le espressioni regolari
@@ -26,8 +26,18 @@ class Hotel(Base):
   price = Column(Float)
   imageUrl = Column(String)
   owner_id = Column(String, ForeignKey('users.id'))
+  likes = Column(Integer, default=0)
 
   @staticmethod
   def generate_id(name: str, location: str) -> str:
     return f"{normalize_id(name)}-{normalize_id(location)}"
 
+class Review(Base):
+  __tablename__ = 'reviews'
+  id = Column(String, primary_key=True, index=True)
+  hotel_id = Column(String, ForeignKey('hotels.id'))
+  user = Column(String, ForeignKey('users.id')) # l'utente dev essere verificato
+  comment = Column(String)
+  rating = Column(Float)
+  date = Column(String)
+  

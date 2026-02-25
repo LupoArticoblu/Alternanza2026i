@@ -21,11 +21,11 @@ import { HotelService, Hotel } from '../services/hotel.service';
         <div class= "space-y-4">
           <div>
             <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" id="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="latua@mail.com">
+            <input type="email" id="email" [(ngModel)]="loginEmail" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="latua@mail.com">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input type="password" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border" placeholder="••••••••">
+            <input type="password" [(ngModel)]="loginPassword" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border" placeholder="••••••••">
           </div>
           <button (click)="login()" class="w-full bg-[#003580] text-white font-bold py-3 rounded-lg hover:bg-blue-800 transition-colors">
             Accedi come Host
@@ -102,6 +102,11 @@ export class LoginHostComponent {
   showForm = false;
   editingId: string | null = null;
 
+  // Campi per il login
+  loginEmail = '';
+  loginPassword = '';
+  loggedEmail = '';
+
   //modello form
   hotelForm={
     name: '',
@@ -113,10 +118,18 @@ export class LoginHostComponent {
 
   //login e logout simulati
   login(){
-    this.isLogged.set(true);
+    if (this.loginEmail && this.loginPassword) {
+      this.loggedEmail = this.loginEmail;
+      this.isLogged.set(true);
+    } else {
+      alert('Inserisci email e password');
+    }
   }
   logout(){
     this.isLogged.set(false);
+    this.loggedEmail = '';
+    this.loginEmail = '';
+    this.loginPassword = '';
   }
 
   // modifica
@@ -175,7 +188,7 @@ export class LoginHostComponent {
       }
     } else {
       //ne creiamo uno
-      this.hotelService.addHotel(hotelData);
+      this.hotelService.addHotel(hotelData, this.loggedEmail);
     }
     this.showForm = false; //nascondiamo i form
     this.resetForm(); //puliamo i campi
