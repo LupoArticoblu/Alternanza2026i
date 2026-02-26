@@ -50,7 +50,7 @@ export class LoginUserComponent {
   login(){
     this.hotelService.login(this.email, this.password, "user").subscribe({
       next: (res: any) => {
-        this.hotelService.currentUser.set({email: this.email, password: this.password, role:"user"});
+        this.hotelService.currentUser.set({email: this.email, role:"user"});
         this.close.emit(); //torna alla home
       },
       error:(err) => {
