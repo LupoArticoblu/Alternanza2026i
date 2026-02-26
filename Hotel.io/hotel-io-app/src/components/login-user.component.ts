@@ -1,6 +1,8 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HotelService } from '../services/hotel.service';
+
 
 @Component({
   selector: 'app-login-user',
@@ -40,4 +42,20 @@ import { FormsModule } from '@angular/forms';
 })
 export class LoginUserComponent {
   @Output() close = new EventEmitter<void>();
+  private hotelService = inject(HotelService);
+
+  email ="";
+  password="";
+
+  login(){
+    this.hotelService.login(this.email, this.password, "user").subscribe({
+      next: (res: any) => {
+        this.hotelService.currentUser.set({email: this.email, password: this.password, role:"user"});
+        this.close.emit(); //torna alla home
+      },
+      error:(err) => {
+        alert("Errore:" + (err.error?.detail || "Errore sconosciuto"));
+      }
+    });
+  }
 }

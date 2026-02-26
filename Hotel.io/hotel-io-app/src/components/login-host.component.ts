@@ -119,14 +119,24 @@ export class LoginHostComponent {
   //login e logout simulati
   login(){
     if (this.loginEmail && this.loginPassword) {
-      this.loggedEmail = this.loginEmail;
-      this.isLogged.set(true);
-    } else {
+      this.hotelService.login(this.loginEmail, this.loginPassword, "host").subscribe({
+        next:(res: any) =>{
+          //login ok? segna email e password come loggati
+          this.loggedEmail = this.loginEmail;
+          this.hotelService.currentUser.set({email: this.loginEmail, role: 'host'})
+          this.isLogged.set(true);
+        }, 
+        error:(err) =>{
+          alert('Errore nel login' + (err.error?.detail || 'Errore sconosciuto'));
+        }
+      });
+    }else{
       alert('Inserisci email e password');
     }
   }
   logout(){
     this.isLogged.set(false);
+    this.hotelService.currentUser.set(null); //rimuovi l'utente loggato
     this.loggedEmail = '';
     this.loginEmail = '';
     this.loginPassword = '';

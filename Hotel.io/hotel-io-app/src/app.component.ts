@@ -65,7 +65,7 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
                     <div class="absolute top-3 right-3">
                       @if(currentUser()?.role !== 'host'){
                        <button 
-                        (click)="$event.stopPropagation(); toggleLike(hotel.id)"
+                        (click)="$event.stopPropagation(); toggleLike(hotel.id, currentUser()?.email)"
                         class="p-2 rounded-full bg-white/90 shadow-sm hover:bg-white transition-colors">
                         <svg 
                           xmlns="http://www.w3.org/2000/svg" 
@@ -136,7 +136,7 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
 })
 export class AppComponent {
   hotels = this.hotelService.hotels;
-  
+  currentUser = this.hotelService.currentUser;
   currentView = signal<ViewMode>('list');
   selectedHotelId = signal<string | null>(null);
   
@@ -159,8 +159,8 @@ export class AppComponent {
     this.setView('detail');
   }
 
-  toggleLike(id: string) {
-    this.hotelService.toggleLike(id);
+  toggleLike(id: string, user_id: string) {
+    this.hotelService.toggleLike(id, user_id);
   }
 
   getAverageRating(hotel: Hotel): string {

@@ -39,7 +39,7 @@ export class HotelService {
   currentUser = signal<any>(null);//memorizza utente loggato
   private http = inject(HttpClient);
   private apiUrl = 'http://localhost:8000'; //indirizzo fast api backend
-
+  
   private hotelsSignal = signal<Hotel[]>([]); //dove andranno segnati/inseriti i vari hotel
 
   login(email: string, password: string, role: string){
