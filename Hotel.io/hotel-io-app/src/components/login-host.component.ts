@@ -28,12 +28,12 @@ import { HotelService, Hotel } from '../services/hotel.service';
             <input type="password" [(ngModel)]="loginPassword" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border" placeholder="••••••••">
           </div>
           <button (click)="login()" class="w-full bg-[#003580] text-white font-bold py-3 rounded-lg hover:bg-blue-800 transition-colors">
-            Accedi come Host
+            Login as Host
           </button>
         </div>
         <div class="mt-6 text-center">
           <button (click)="close.emit()" class="text-sm text-gray-500 hover:text-blue-600 transition-colors">
-            &larr; Torna alla Home
+            &larr; Back to Home
           </button>
         </div>
       }@else {
@@ -127,11 +127,11 @@ export class LoginHostComponent {
           this.isLogged.set(true);
         }, 
         error:(err) =>{
-          alert('Errore nel login' + (err.error?.detail || 'Errore sconosciuto'));
+          alert('Error login' + (err.error?.detail || 'Unknown Error'));
         }
       });
     }else{
-      alert('Inserisci email e password');
+      alert('Insert email and password');
     }
   }
   logout(){

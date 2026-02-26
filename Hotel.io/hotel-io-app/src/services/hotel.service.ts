@@ -41,11 +41,16 @@ export class HotelService {
   private apiUrl = 'http://localhost:8000'; //indirizzo fast api backend
   
   private hotelsSignal = signal<Hotel[]>([]); //dove andranno segnati/inseriti i vari hotel
-
+  //metodo login
   login(email: string, password: string, role: string){
     return this.http.post(`${this.apiUrl}/login`, {email, password, role: role});
   }
-
+  //metodo registrazione
+  register(email: string, password: string, role: string){
+    //chiamata all'endpoint register del backend e crea utente
+    return this.http.post(`${this.apiUrl}/register`, {email, password, role: role});
+  }
+  //metodo per recuperare gli hotel
   fetchHotels(){
     this.http.get<Hotel[]>(`${this.apiUrl}/hotels`).subscribe(data => {
       this.hotelsSignal.set(data);

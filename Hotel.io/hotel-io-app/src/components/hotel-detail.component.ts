@@ -240,6 +240,7 @@ import { StarRatingComponent } from './star-rating.component';
 export class HotelDetailComponent {
   hotel = input.required<Hotel>();
   close = output<void>();
+  currentUser = this.hotelService.currentUser;
 
   newReview = {
     user: '',
@@ -250,7 +251,9 @@ export class HotelDetailComponent {
   constructor(private hotelService: HotelService) {}
 
   onToggleLike() {
-    this.hotelService.toggleLike(this.hotel().id);
+    if (this.currentUser() && this.currentUser().role !== 'host'){
+      this.hotelService.toggleLike(this.hotel().id, this.currentUser().email);
+    }
   }
 
   analyzeWithAI() {
@@ -262,14 +265,13 @@ export class HotelDetailComponent {
   }
 
   onSubmitReview() {
-    if (this.isValidReview()) {
+    if (this.isValidReview() && this.currentUser()) {
       this.hotelService.addReview(this.hotel().id, {
-        user: this.newReview.user,
         rating: this.newReview.rating,
         comment: this.newReview.comment
-      });
-      // Reset form
-      this.newReview = { user: '', rating: 5, comment: '' };
+      }, this.currentUser().email);
+      // Reset commento
+      this.newReview.comment = "";
     }
   }
 }
