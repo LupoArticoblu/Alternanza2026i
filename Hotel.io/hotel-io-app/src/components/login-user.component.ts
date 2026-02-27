@@ -33,7 +33,7 @@ import { HotelService } from '../services/hotel.service';
         <input type="email" [(ngModel)]="email" class="w-full rounded-lg border-gray-300 py-2 px-3 border" placeholder="Email">
         <input type="password" [(ngModel)]="password" class="w-full rounded-lg border-gray-300 py-2 px-3 border" placeholder="Password">
         
-        <button (click)="isRegistering() ? register() : login()" ="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors">
+        <button (click)="isRegistering() ? register() : login()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors">
           {{ isRegistering() ? "Sign in" : "Login" }}
         </button>
         
@@ -72,7 +72,9 @@ export class LoginUserComponent {
         this.isRegistering.set(false); //torna al form per il login
       },
       error:(err) => {
-        alert("Error:" + (err.error?.detail || "Unknown Error"));
+        console.error('Registration error:', err);
+        const detail = err.error?.detail ? (typeof err.error.detail === 'string' ? err.error.detail : JSON.stringify(err.error.detail)) : 'Unknown Error';
+        alert(`Registration Error (Status ${err.status}): ${detail}`);
       }
     })
   }
@@ -84,7 +86,9 @@ export class LoginUserComponent {
         this.close.emit(); //torna alla home
       },
       error:(err) => {
-        alert("Error:" + (err.error?.detail || "Unknown Error"));
+        console.error('Login error:', err);
+        const detail = err.error?.detail ? (typeof err.error.detail === 'string' ? err.error.detail : JSON.stringify(err.error.detail)) : 'Unknown Error';
+        alert(`Login Error (Status ${err.status}): ${detail}`);
       }
     });
   }

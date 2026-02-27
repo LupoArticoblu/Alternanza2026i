@@ -120,7 +120,7 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
       </main>
 
       <footer class="bg-gray-100 border-t border-gray-200 mt-12 py-8 text-center text-gray-500 text-sm">
-        <p>&copy; 2024 BookGenius. Powered by Google Gemini.</p>
+        <p>&copy; 2026 Hotel.io. Powered by Exprivia.</p>
       </footer>
     </div>
   `,

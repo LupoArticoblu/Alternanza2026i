@@ -180,16 +180,7 @@ import { StarRatingComponent } from './star-rating.component';
           <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 sticky top-4">
             <h3 class="text-lg font-bold text-gray-800 mb-4">Write a Review</h3>
             <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
-                <input 
-                  type="text" 
-                  [(ngModel)]="newReview.user"
-                  placeholder="e.g. John Doe"
-                  class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border"
-                >
-              </div>
-              
+
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Rating</label>
                 <div class="flex gap-2">
@@ -243,7 +234,6 @@ export class HotelDetailComponent {
   currentUser = this.hotelService.currentUser;
 
   newReview = {
-    user: '',
     rating: 5,
     comment: ''
   };
@@ -261,7 +251,7 @@ export class HotelDetailComponent {
   }
 
   isValidReview(): boolean {
-    return this.newReview.user.trim().length > 0 && this.newReview.comment.trim().length > 0;
+    return this.newReview.comment.trim().length > 0;
   }
 
   onSubmitReview() {

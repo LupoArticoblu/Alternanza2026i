@@ -1,43 +1,55 @@
 {
-  "hash": "c8578137",
-  "configHash": "46c21857",
+  "hash": "24d973df",
+  "configHash": "bb42f97d",
   "lockfileHash": "25a5fc1a",
-  "browserHash": "401c18da",
+  "browserHash": "2f2a7d48",
   "optimized": {
     "@angular/common": {
       "src": "../../../../../../node_modules/@angular/common/fesm2022/common.mjs",
       "file": "@angular_common.js",
-      "fileHash": "598f7cf7",
+      "fileHash": "7b74c72a",
+      "needsInterop": false
+    },
+    "@angular/common/http": {
+      "src": "../../../../../../node_modules/@angular/common/fesm2022/http.mjs",
+      "file": "@angular_common_http.js",
+      "fileHash": "38d36cda",
       "needsInterop": false
     },
     "@angular/core": {
       "src": "../../../../../../node_modules/@angular/core/fesm2022/core.mjs",
       "file": "@angular_core.js",
-      "fileHash": "1048d702",
+      "fileHash": "8858ad7c",
       "needsInterop": false
     },
     "@angular/forms": {
       "src": "../../../../../../node_modules/@angular/forms/fesm2022/forms.mjs",
       "file": "@angular_forms.js",
-      "fileHash": "ac4bd9f3",
+      "fileHash": "5c55b1eb",
       "needsInterop": false
     },
     "@angular/platform-browser": {
       "src": "../../../../../../node_modules/@angular/platform-browser/fesm2022/platform-browser.mjs",
       "file": "@angular_platform-browser.js",
-      "fileHash": "b40fd72d",
+      "fileHash": "3b783433",
       "needsInterop": false
     },
     "@google/genai": {
       "src": "../../../../../../node_modules/@google/genai/dist/web/index.mjs",
       "file": "@google_genai.js",
-      "fileHash": "5857ac5c",
+      "fileHash": "a09a059a",
       "needsInterop": false
     }
   },
   "chunks": {
-    "chunk-3AK6BQTA": {
-      "file": "chunk-3AK6BQTA.js"
+    "chunk-FAW5GWHQ": {
+      "file": "chunk-FAW5GWHQ.js"
+    },
+    "chunk-6TEQY4N2": {
+      "file": "chunk-6TEQY4N2.js"
+    },
+    "chunk-I4BLQPU2": {
+      "file": "chunk-I4BLQPU2.js"
     },
     "chunk-FXUEKDFT": {
       "file": "chunk-FXUEKDFT.js"

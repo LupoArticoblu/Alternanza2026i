@@ -16,11 +16,21 @@ app = FastAPI(title="Hotel.io API")
 # Configurazione CORS per permettere chiamate da Angular (solitamente porta 4200)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4200"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://hotel.io:3000",
+        "http://www.hotel.io:3000",
+        "http://hotel.local:3000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+def read_root():
+    return {"status": "ok", "message": "Hotel.io API is running"}
 
 #END POINT UTENTI
 @app.post("/login")

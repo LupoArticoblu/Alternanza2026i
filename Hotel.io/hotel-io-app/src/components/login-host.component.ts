@@ -12,10 +12,10 @@ import { HotelService, Hotel } from '../services/hotel.service';
       @if (!isLogged()) {
       
         <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">
-          Host login
+          {{ isRegistering() ? "Host Registration" : "Host Login" }}
         </h2>
         <p class="text-gray-600 mb-6 text-center">
-          manage your properties and bookings
+          {{ isRegistering() ? "Create an account to manage your properties" : "Manage your properties and bookings" }}
         </p>
 
         <div class= "space-y-4">
@@ -27,9 +27,16 @@ import { HotelService, Hotel } from '../services/hotel.service';
             <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <input type="password" [(ngModel)]="loginPassword" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border" placeholder="••••••••">
           </div>
-          <button (click)="login()" class="w-full bg-[#003580] text-white font-bold py-3 rounded-lg hover:bg-blue-800 transition-colors">
-            Login as Host
+          <button (click)="isRegistering() ? register() : login()" class="w-full bg-[#003580] text-white font-bold py-3 rounded-lg hover:bg-blue-800 transition-colors">
+            {{ isRegistering() ? "Register as Host" : "Login as Host" }}
           </button>
+          
+          <p class="text-center text-sm text-gray-600 mt-4">
+            {{ isRegistering() ? "Already have an account?" : "Don't have an account?" }}
+            <button (click)="toggleMode()" class="text-blue-600 font-bold hover:underline ml-1">
+               {{ isRegistering() ? "Login" : "Sign up" }}
+            </button>
+          </p>
         </div>
         <div class="mt-6 text-center">
           <button (click)="close.emit()" class="text-sm text-gray-500 hover:text-blue-600 transition-colors">
@@ -99,6 +106,8 @@ export class LoginHostComponent {
   hotels = this.hotelService.hotels;
 
   isLogged = signal(false);
+  isRegistering = signal(false);
+
   showForm = false;
   editingId: string | null = null;
 
@@ -116,7 +125,11 @@ export class LoginHostComponent {
     imageUrl: '',
   };
 
-  //login e logout simulati
+  toggleMode() {
+    this.isRegistering.update(val => !val);
+  }
+
+  //login e logout
   login(){
     if (this.loginEmail && this.loginPassword) {
       this.hotelService.login(this.loginEmail, this.loginPassword, "host").subscribe({
@@ -127,13 +140,34 @@ export class LoginHostComponent {
           this.isLogged.set(true);
         }, 
         error:(err) =>{
-          alert('Error login' + (err.error?.detail || 'Unknown Error'));
+          console.error('Host login error:', err);
+          const detail = err.error?.detail ? (typeof err.error.detail === 'string' ? err.error.detail : JSON.stringify(err.error.detail)) : 'Unknown Error';
+          alert(`Login Error (Status ${err.status}): ${detail}`);
         }
       });
     }else{
       alert('Insert email and password');
     }
   }
+
+  register() {
+    if (this.loginEmail && this.loginPassword) {
+      this.hotelService.register(this.loginEmail, this.loginPassword, "host").subscribe({
+        next: (res: any) => {
+          alert('Host registered successfully! Now you can login.');
+          this.isRegistering.set(false);
+        },
+        error: (err) => {
+          console.error('Host registration error:', err);
+          const detail = err.error?.detail ? (typeof err.error.detail === 'string' ? err.error.detail : JSON.stringify(err.error.detail)) : 'Unknown Error';
+          alert(`Registration Error (Status ${err.status}): ${detail}`);
+        }
+      });
+    } else {
+      alert('Insert email and password to register');
+    }
+  }
+
   logout(){
     this.isLogged.set(false);
     this.hotelService.currentUser.set(null); //rimuovi l'utente loggato

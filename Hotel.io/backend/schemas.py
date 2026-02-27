@@ -1,6 +1,6 @@
 #qui inseriamo le classi per la serializzazione
 from pydantic import BaseModel, EmailStr
-from typing import Optional 
+from typing import Optional, List
 
 class UserBase(BaseModel):
   email: EmailStr
@@ -24,23 +24,23 @@ class HotelBase(BaseModel):
 class HotelCreate(HotelBase):
   pass
 
+class ReviewCreate(BaseModel): #prendiamo l'id utente dal login
+   comment: str
+   rating: float
+
+class Review(ReviewCreate):
+  id:str
+  hotel_id: str
+  user: str
+  date: str
+  class Config:
+    from_attributes = True
+
 class Hotel(HotelBase):
   id:str
   owner_id:str
   likes: int
+  reviews: list[Review] = [] #inizializziamo la lista di recensioni
   class Config:
     from_attributes = True
 
-class ReviewBase(BaseModel): #prendiamo l'id utente dal login
-  comment: str
-  rating: float
-
-class ReviewCreate(ReviewBase):
-  pass # eredita i campi di ReviewBase
-
-class Review(ReviewBase):
-  id: str
-  hotel_id: str
-  user_id: str
-  class Config:
-    from_attributes = True 
