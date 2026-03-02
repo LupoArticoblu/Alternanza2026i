@@ -43,55 +43,101 @@ import { HotelService, Hotel } from '../services/hotel.service';
             &larr; Back to Home
           </button>
         </div>
-      }@else {
+      } @else {
         <div class="space-y-6">
-          <div class="flex justify-between items-center mb-6">
-            <h2 class ="text-2xl font-bold text-grey-900">Dashboard Host</h2>
-            <button (click)="logout()" class ="text-sm text-red-500 hover:underline">Exit</button>
+          <div class="flex justify-between items-center pb-4 border-b border-gray-100">
+            <div>
+              <h2 class="text-xl font-bold text-gray-900">Dashboard Host</h2>
+              <p class="text-xs text-gray-500">{{loggedEmail}}</p>
+            </div>
+            <button (click)="logout()" class="text-sm font-medium text-red-500 hover:text-red-700 transition-colors px-3 py-1 rounded-md hover:bg-red-50">
+              Exit
+            </button>
           </div>
 
-          <p class="text-gray-600 mb-4">Welcome! Manage your properties here.</p>
-          <button (click)="logout()" class="text-red-500 hover:underline font-medium">Logout</button>
-        </div>
-
-        <!-- aggiunta nuovi hotel -->
-        <button (click)="showForm = true; resetForm()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 transition-colors">+ Add New Hotel</button>
-
-        @if(showForm){
-          <div class="bg-gray-100 p-6 rounded-xl border border-gray-200 mb-8">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">{{editingId ? 'Edit Hotel' : 'Add New Hotel'}}</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input type="text" [(ngModel)]="hotelForm.name" placeholder="Hotel Name" class="p-2 border rounded">
-              <input type="text" [(ngModel)]="hotelForm.location" placeholder="Location" class="p-2 border rounded">
-              <input type="number" [(ngModel)]="hotelForm.price" placeholder="Price per night($)" class="p-2 border rounded">
-              <input type="text" [(ngModel)]="hotelForm.imageUrl" placeholder="Image URL" class="p-2 border rounded">
-              <textarea type="text" [(ngModel)]="hotelForm.description" placeholder="Description" class="p-2 border rounded md:col-span-2"></textarea>
-            </div>
-            <div class="mt-4 flex gap-2 justify-end">
-              <button (click)="showForm = false;resetForm()" class="px-4 py-2 text-gray-500">Cancel</button>
-              <button (click)="saveHotel()" class="bg-blue-600 text-white px-6 py-2 rounded font-bold disabled:opacity-50" [disabled]="!isValid()">
-                {{ editingId ? 'Update Hotel' : 'Add Hotel'}}
+          @if(!showForm){
+            <div class="py-4 text-center">
+              <p class="text-gray-600 mb-6">Manage your properties and reach more customers.</p>
+              <button (click)="showForm = true; resetForm()" class="w-full bg-[#003580] text-white font-bold py-3 rounded-lg hover:bg-blue-800 transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
+                <span class="text-xl">+</span> Add New Hotel
               </button>
             </div>
-          </div>
-        }
-        <!-- lista hotel -->
-        <div class="grid gap-4">
-          @for(hotel of hotels(); track hotel.id){
-            <div class="flex items-center justify-between p-4 bg-gray-50 rounded border border-gray-200 rounded-xl hover:shadow-sm transition-shadow">
-              <div class="flex items-center gap-4">
-                <img [src]="hotel.imageUrl" class="w-12 h-12 object-cover rounded-lg shadow-sm" alt="null">
+          } @else {
+            <div class="space-y-5 animate-fade-in">
+              <h3 class="text-lg font-bold text-gray-800 mb-4 border-l-4 border-[#003580] pl-3">
+                {{editingId ? 'Edit Hotel' : 'Create New Hotel'}}
+              </h3>
+              
+              <div class="space-y-3">
                 <div>
-                  <h4 class="font-bold text-gray-800">{{hotel.name}}</h4>
-                  <p class="text-gray-500 text-xs">{{hotel.location}}</p>
+                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Hotel Name</label>
+                  <input type="text" [(ngModel)]="hotelForm.name" placeholder="Grand Hotel" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Location</label>
+                  <input type="text" [(ngModel)]="hotelForm.location" placeholder="City, Country" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Price / Night</label>
+                    <input type="number" [(ngModel)]="hotelForm.price" placeholder="€" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Image URL</label>
+                    <input type="text" [(ngModel)]="hotelForm.imageUrl" placeholder="https://..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Description</label>
+                  <textarea rows="3" [(ngModel)]="hotelForm.description" placeholder="A brief description of your property..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
                 </div>
               </div>
-              <div class="flex gap-2">
-                <button class="text-blue-600 hover:bg-50-blue rounded-lg transition-colors" (click)="editHotel(hotel)">Edit</button>
-                <button class="text-red-600 hover:bg-50-blue rounded-lg transition-colors" (click)="deleteHotel(hotel.id)">Delete</button>
+
+              <div class="flex gap-2 pt-2">
+                <button (click)="showForm = false; resetForm()" class="flex-1 px-4 py-3 text-gray-500 font-medium hover:bg-gray-50 rounded-lg transition-colors">
+                  Cancel
+                </button>
+                <button (click)="saveHotel()" class="flex-[2] bg-[#003580] text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-800 transition-all disabled:opacity-50 shadow-md" [disabled]="!isValid()">
+                  {{ editingId ? 'Save Changes' : 'Publish Hotel'}}
+                </button>
               </div>
             </div>
-
+          }
+          <!-- lista hotel -->
+          @if(!showForm){
+            <div class="pt-4 mt-4 border-t border-gray-100">
+              <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Your Properties</h3>
+              <div class="space-y-3">
+                @for(hotel of hotels(); track hotel.id){
+                  @if(hotel.owner_id === loggedEmail){
+                    <div class="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-sm hover:border-blue-200 transition-all group">
+                      <div class="flex items-center gap-3">
+                        <img [src]="hotel.imageUrl" class="w-12 h-12 object-cover rounded-lg shadow-sm" alt="Hotel image">
+                        <div>
+                          <h4 class="font-bold text-gray-800 text-sm leading-tight">{{hotel.name}}</h4>
+                          <p class="text-gray-400 text-xs">{{hotel.location}}</p>
+                        </div>
+                      </div>
+                      <div class="flex gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                        <button class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" (click)="editHotel(hotel)" title="Edit">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        </button>
+                        <button class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" (click)="deleteHotel(hotel.id)" title="Delete">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                  }
+                } @empty {
+                   <div class="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                     <p class="text-gray-400 text-sm italic">No properties yet.</p>
+                   </div>
+                }
+              </div>
+            </div>
           }
         </div>
       }
