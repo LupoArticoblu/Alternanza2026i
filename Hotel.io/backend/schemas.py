@@ -20,6 +20,7 @@ class HotelBase(BaseModel):
   description:str
   price:float
   imageUrl: Optional[str] = None
+  images: Optional[List[str]] = []
 
 class HotelCreate(HotelBase):
   pass
@@ -40,6 +41,7 @@ class Hotel(HotelBase):
   id:str
   owner_id:str
   likes: int
+  isLiked: bool = False
   reviews: list[Review] = [] #inizializziamo la lista di recensioni
   class Config:
     from_attributes = True

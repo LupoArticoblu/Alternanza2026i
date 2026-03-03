@@ -10,17 +10,59 @@ import { StarRatingComponent } from './star-rating.component';
   imports: [CommonModule, FormsModule, StarRatingComponent],
   template: `
     <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
-      <!-- Header Image Area -->
-      <div class="relative h-64 md:h-80 w-full overflow-hidden">
-        <img [src]="hotel().imageUrl" [alt]="hotel().name" class="w-full h-full object-cover">
-        <button 
+      <!-- Header Image Carousel -->
+      <div class="relative h-64 md:h-80 w-full overflow-hidden bg-gray-900">
+        <!-- Images -->
+        @for (img of getImages(); track $index) {
+          <img
+            [src]="img"
+            [alt]="hotel().name"
+            class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+            [class.opacity-100]="$index === currentImageIndex()"
+            [class.opacity-0]="$index !== currentImageIndex()">
+        }
+
+        <!-- Close button -->
+        <button
           (click)="close.emit()"
           class="absolute top-4 right-4 bg-white/90 hover:bg-white p-2 rounded-full shadow-md transition-all text-gray-700 hover:text-gray-900 z-10">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white">
+
+        <!-- Prev / Next arrows (only if > 1 image) -->
+        @if (getImages().length > 1) {
+          <button
+            (click)="prevImage()"
+            class="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white p-2 rounded-full z-10 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+          </button>
+          <button
+            (click)="nextImage()"
+            class="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white p-2 rounded-full z-10 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </button>
+
+          <!-- Dot indicators -->
+          <div class="absolute bottom-16 left-0 right-0 flex justify-center gap-1.5 z-10">
+            @for (img of getImages(); track $index) {
+              <button
+                (click)="currentImageIndex.set($index)"
+                class="w-2 h-2 rounded-full transition-all"
+                [class.bg-white]="$index === currentImageIndex()"
+                [class.bg-white/40]="$index !== currentImageIndex()">
+              </button>
+            }
+          </div>
+        }
+
+        <!-- Hotel name overlay -->
+        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white z-10">
           <h2 class="text-3xl font-bold">{{ hotel().name }}</h2>
           <p class="text-white/90 flex items-center mt-1">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-1">
@@ -232,6 +274,23 @@ export class HotelDetailComponent {
   hotel = input.required<Hotel>();
   close = output<void>();
   currentUser = this.hotelService.currentUser;
+
+  currentImageIndex = signal(0);
+
+  getImages(): string[] {
+    const imgs = this.hotel().images;
+    return imgs && imgs.length > 0 ? imgs : [this.hotel().imageUrl];
+  }
+
+  prevImage() {
+    const len = this.getImages().length;
+    this.currentImageIndex.update(i => (i - 1 + len) % len);
+  }
+
+  nextImage() {
+    const len = this.getImages().length;
+    this.currentImageIndex.update(i => (i + 1) % len);
+  }
 
   newReview = {
     rating: 5,

@@ -84,9 +84,30 @@ import { HotelService, Hotel } from '../services/hotel.service';
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Price / Night</label>
                     <input type="number" [(ngModel)]="hotelForm.price" placeholder="€" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                   </div>
-                  <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Image URL</label>
-                    <input type="text" [(ngModel)]="hotelForm.imageUrl" placeholder="https://..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <div class="col-span-2">
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Hotel Images</label>
+                    <div class="flex flex-col gap-3">
+                      @if (hotelForm.images.length > 0) {
+                        <div class="flex gap-2 flex-wrap">
+                          @for (img of hotelForm.images; track $index) {
+                            <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 group shadow-sm">
+                              <img [src]="img" class="w-full h-full object-cover" alt="Preview">
+                              @if ($index === 0) {
+                                <span class="absolute bottom-0 left-0 right-0 bg-blue-600/80 text-white text-[9px] text-center py-0.5">Cover</span>
+                              }
+                              <button (click)="removeImage($index)" class="absolute top-1 right-1 bg-red-500 text-white p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                              </button>
+                            </div>
+                          }
+                        </div>
+                      }
+                      <label class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                        <span class="text-sm text-gray-600">Add Images</span>
+                        <input type="file" class="hidden" accept="image/*" multiple (change)="onFilesSelected($event)">
+                      </label>
+                    </div>
                   </div>
                 </div>
 
@@ -169,6 +190,7 @@ export class LoginHostComponent {
     description:'',
     price: null as number | null,
     imageUrl: '',
+    images: [] as string[],
   };
 
   toggleMode() {
@@ -230,11 +252,36 @@ export class LoginHostComponent {
       location: hotel.location,
       description: hotel.description,
       price: hotel.price,
-      imageUrl: hotel.imageUrl
+      imageUrl: hotel.imageUrl,
+      images: hotel.images ? [...hotel.images] : (hotel.imageUrl ? [hotel.imageUrl] : [])
     };
     //scroll in cima
     this.showForm = true;
     window.scrollTo(0,0);
+  }
+
+  onFilesSelected(event: any) {
+    const files: FileList = event.target.files;
+    if (files && files.length > 0) {
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+          this.hotelForm.images.push(e.target.result);
+          // La prima immagine diventa la cover (imageUrl)
+          if (this.hotelForm.images.length === 1) {
+            this.hotelForm.imageUrl = e.target.result;
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    // reset input so the same file can be re-selected
+    event.target.value = '';
+  }
+
+  removeImage(index: number) {
+    this.hotelForm.images.splice(index, 1);
+    this.hotelForm.imageUrl = this.hotelForm.images[0] ?? '';
   }
   //cancella hotel
   deleteHotel(id: string){
@@ -250,6 +297,7 @@ export class LoginHostComponent {
       description:'',
       price:null,
       imageUrl:'',
+      images:[],
     };
     this.editingId = null;
   }
@@ -261,12 +309,15 @@ export class LoginHostComponent {
   saveHotel(){
     if(!this.isValid()) return;
 
+    const fallbackUrl = `https://picsum.photos/800/600?random=${Math.floor(Math.random()*1000)}`;
+    const images = this.hotelForm.images.length > 0 ? this.hotelForm.images : [fallbackUrl];
     const hotelData = {
       name: this.hotelForm.name,
       location: this.hotelForm.location,
       description: this.hotelForm.description,
       price: this.hotelForm.price,
-      imageUrl: this.hotelForm.imageUrl || `https://picsum.photos/800/600?random=${Math.floor(Math.random()*1000)}`
+      imageUrl: images[0],
+      images: images
     };
 
     if(this.editingId){

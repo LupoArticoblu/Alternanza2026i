@@ -24,6 +24,7 @@ export interface Hotel {
   description: string;
   price: number;
   imageUrl: string;
+  images?: string[];
   likes: number;
   isLiked: boolean;
   reviews: Review[];

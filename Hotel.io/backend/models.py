@@ -1,15 +1,34 @@
-from sqlalchemy import Column, String, Float, ForeignKey, Integer
+from sqlalchemy import Column, String, Float, ForeignKey, Integer, Text, TypeDecorator
 from sqlalchemy.orm import relationship
 from database import Base
 
 #importa il modulo re per le espressioni regolari
 import re
+import json
 
 #normalizzazione degli id
 def normalize_id(text: str) -> str:
   text = text.lower()
   text = re.sub(r'[^a-z0-9]+', '-', text)
   return text.strip('-')
+
+# TypeDecorator per serializzare liste come JSON
+class JsonList(TypeDecorator):
+  impl = Text
+  cache_ok = True
+
+  def process_bind_param(self, value, dialect):
+    if value is None:
+      return '[]'
+    return json.dumps(value)
+
+  def process_result_value(self, value, dialect):
+    if value is None:
+      return []
+    try:
+      return json.loads(value)
+    except (ValueError, TypeError):
+      return []
 
 #modello utente
 class User(Base):
@@ -26,6 +45,7 @@ class Hotel(Base):
   description = Column(String)
   price = Column(Float)
   imageUrl = Column(String)
+  images = Column(JsonList, default=list)
   #relazioni con la tabella reviews
   reviews = relationship("Review", backref="hotel", cascade= "all, delete-orphan")
   owner_id = Column(String, ForeignKey('users.id'))

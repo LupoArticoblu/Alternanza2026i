@@ -11,6 +11,18 @@ from fastapi.middleware.cors import CORSMiddleware
 #crea le tabelle nel db
 models.Base.metadata.create_all(bind=engine)
 
+# Migrazione al volo: aggiungi colonna images se non esiste
+from sqlalchemy import text
+def run_migrations():
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE hotels ADD COLUMN images TEXT DEFAULT '[]'"))
+            conn.commit()
+        except Exception:
+            pass  # colonna già esistente
+
+run_migrations()
+
 app = FastAPI(title="Hotel.io API")
 
 # Configurazione CORS per permettere chiamate da Angular (solitamente porta 4200)
@@ -64,8 +76,21 @@ def register(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
 
 #END POINT HOTEL
 @app.get("/hotels", response_model=List[schemas.Hotel])
-def get_hotels(db: Session = Depends(get_db)):
-  return db.query(models.Hotel).all()
+def get_hotels(user_id: str = None, db: Session = Depends(get_db)):
+  hotels = db.query(models.Hotel).all()
+  result = []
+  for hotel in hotels:
+    liked = False
+    if user_id:
+      liked = db.query(models.Like).filter(
+        models.Like.hotel_id == hotel.id,
+        models.Like.user_id == user_id
+      ).first() is not None
+    hotel_dict = {c.name: getattr(hotel, c.name) for c in hotel.__table__.columns}
+    hotel_dict['reviews'] = hotel.reviews
+    hotel_dict['isLiked'] = liked
+    result.append(schemas.Hotel.model_validate(hotel_dict))
+  return result
 
 @app.post("/hotels", response_model=schemas.Hotel)
 def create_hotel(hotel:schemas.HotelCreate, owner_id:str, db:Session = Depends(get_db)):
