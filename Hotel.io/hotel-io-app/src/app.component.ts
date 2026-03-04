@@ -24,8 +24,23 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
             <span class="text-xl font-bold tracking-tight">Hotel.io</span>
           </div>
           <div class="flex items-center gap-2">
-            <button (click)="setView('login-user')" class="text-white text-sm hover:underline px-2">User</button>
-            <button (click)="setView('login-host')" class="text-white text-sm hover:underline px-2 border-l border-white/30">Host</button>
+            @if (!currentUser()) {
+              <button (click)="setView('login-user')" class="text-white text-sm hover:underline px-2">User</button>
+              <button (click)="setView('login-host')" class="text-white text-sm hover:underline px-2 border-l border-white/30">Host</button>
+            } @else {
+              <span class="text-xs text-blue-200 hidden md:inline">{{currentUser()?.email}}</span>
+              @if (currentUser()?.role === 'host') {
+                <button (click)="setView('login-host')" class="text-white text-sm hover:underline px-2">Dashboard Host</button>
+              } @else {
+                <button (click)="showLikesOnly.set(!showLikesOnly())" class="text-white text-sm hover:underline px-2 flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" [attr.fill]="showLikesOnly() ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-red-400">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                  </svg>
+                  {{ showLikesOnly() ? 'Show All' : 'My Likes' }}
+                </button>
+              }
+              <button (click)="logout()" class="text-white text-sm hover:underline px-2 border-l border-white/30 text-red-200">Logout</button>
+            }
           </div>
 
         </div>
@@ -47,12 +62,12 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
         @if (currentView() === 'list') {
           <div class="space-y-6 animate-fade-in">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <h1 class="text-3xl font-bold text-gray-900">Find your next stay</h1>
-              <div class="text-gray-500">{{ hotels().length }} properties found</div>
+              <h1 class="text-3xl font-bold text-gray-900">{{ showLikesOnly() ? 'Your Favorite Hotels' : 'Find your next stay' }}</h1>
+              <div class="text-gray-500">{{ filteredHotels().length }} properties found</div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              @for (hotel of hotels(); track hotel.id) {
+              @for (hotel of filteredHotels(); track hotel.id) {
                 <div 
                   class="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200 overflow-hidden flex flex-col group cursor-pointer"
                   (click)="selectHotel(hotel)">
@@ -65,11 +80,11 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
                     <div class="absolute top-3 right-3">
                       @if(currentUser()?.role !== 'host'){
                        <button 
-                        (click)="$event.stopPropagation(); toggleLike(hotel.id, currentUser()?.email)"
+                        (click)="$event.stopPropagation(); toggleLike(hotel.id)"
                         class="p-2 rounded-full bg-white/90 shadow-sm hover:bg-white transition-colors">
                         <svg 
                           xmlns="http://www.w3.org/2000/svg" 
-                          [class.fill-red-500]="hotel.isLiked"
+                          [attr.fill]="hotel.isLiked ? 'currentColor' : 'none'"
                           [class.text-red-500]="hotel.isLiked"
                           [class.text-gray-400]="!hotel.isLiked"
                           viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 transition-colors">
@@ -139,6 +154,15 @@ export class AppComponent {
   currentUser = this.hotelService.currentUser;
   currentView = signal<ViewMode>('list');
   selectedHotelId = signal<string | null>(null);
+  showLikesOnly = signal(false);
+
+  filteredHotels = computed(() => {
+    let list = this.hotels();
+    if (this.showLikesOnly()) {
+      list = list.filter(h => h.isLiked);
+    }
+    return list;
+  });
   
   selectedHotel = computed(() => 
     this.hotels().find(h => h.id === this.selectedHotelId()) || null
@@ -159,8 +183,22 @@ export class AppComponent {
     this.setView('detail');
   }
 
-  toggleLike(id: string, user_id: string) {
-    this.hotelService.toggleLike(id, user_id);
+  logout() {
+    this.hotelService.currentUser.set(null);
+    this.hotelService.fetchHotels();
+    this.setView('list');
+    this.showLikesOnly.set(false);
+  }
+
+  toggleLike(id: string) {
+    const user = this.currentUser();
+    if (!user) {
+      this.setView('login-user');
+      return;
+    }
+    if (user.role !== 'host') {
+      this.hotelService.toggleLike(id, user.email);
+    }
   }
 
   getAverageRating(hotel: Hotel): string {

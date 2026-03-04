@@ -1,4 +1,4 @@
-import {Component, EventEmitter, inject, Output, signal} from '@angular/core';
+import {Component, EventEmitter, inject, Output, signal, computed} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import { HotelService, Hotel } from '../services/hotel.service';
@@ -9,6 +9,7 @@ import { HotelService, Hotel } from '../services/hotel.service';
   imports: [CommonModule, FormsModule],
   template:`
     <div class ="max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-100 animate-fade-in">
+      <!-- se non è loggato mostra il form di login/registrazione -->
       @if (!isLogged()) {
       
         <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">
@@ -21,11 +22,11 @@ import { HotelService, Hotel } from '../services/hotel.service';
         <div class= "space-y-4">
           <div>
             <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" id="email" [(ngModel)]="loginEmail" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="latua@mail.com">
+            <input type="email" id="email" [(ngModel)]="loginEmail" (keydown.enter)="passwordInput.focus()" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="latua@mail.com">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input type="password" [(ngModel)]="loginPassword" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border" placeholder="••••••••">
+            <input type="password" [(ngModel)]="loginPassword" (keydown.enter)="isRegistering() ? register() : login()" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border" placeholder="••••••••">
           </div>
           <button (click)="isRegistering() ? register() : login()" class="w-full bg-[#003580] text-white font-bold py-3 rounded-lg hover:bg-blue-800 transition-colors">
             {{ isRegistering() ? "Register as Host" : "Login as Host" }}
@@ -43,6 +44,7 @@ import { HotelService, Hotel } from '../services/hotel.service';
             &larr; Back to Home
           </button>
         </div>
+        <!-- se è loggato mostra dashboard -->
       } @else {
         <div class="space-y-6">
           <div class="flex justify-between items-center pb-4 border-b border-gray-100">
@@ -51,7 +53,7 @@ import { HotelService, Hotel } from '../services/hotel.service';
               <p class="text-xs text-gray-500">{{loggedEmail}}</p>
             </div>
             <button (click)="logout()" class="text-sm font-medium text-red-500 hover:text-red-700 transition-colors px-3 py-1 rounded-md hover:bg-red-50">
-              Exit
+              Logout
             </button>
           </div>
 
@@ -204,8 +206,10 @@ export class LoginHostComponent {
         next:(res: any) =>{
           //login ok? segna email e password come loggati
           this.loggedEmail = this.loginEmail;
-          this.hotelService.currentUser.set({email: this.loginEmail, role: 'host'})
+          this.hotelService.currentUser.set({email: this.loginEmail, role: 'host'});
           this.isLogged.set(true);
+          // fetch hotels to get liked status
+          this.hotelService.fetchHotels();
         }, 
         error:(err) =>{
           console.error('Host login error:', err);
@@ -242,6 +246,13 @@ export class LoginHostComponent {
     this.loggedEmail = '';
     this.loginEmail = '';
     this.loginPassword = '';
+    this.hotelService.fetchHotels(); // ricarica tutto senza filtro utente
+  }
+
+  toggleLike(hotelId: string) {
+    if (this.loggedEmail) {
+      this.hotelService.toggleLike(hotelId, this.loggedEmail);
+    }
   }
 
   // modifica

@@ -51,9 +51,11 @@ export class HotelService {
     //chiamata all'endpoint register del backend e crea utente
     return this.http.post(`${this.apiUrl}/register`, {email, password, role: role});
   }
-  //metodo per recuperare gli hotel
+  // metodo per recuperare gli hotel, usando automaticamente l'utente loggato se presente
   fetchHotels(){
-    this.http.get<Hotel[]>(`${this.apiUrl}/hotels`).subscribe(data => {
+    const userId = this.currentUser()?.email;
+    const url = userId ? `${this.apiUrl}/hotels?user_id=${userId}` : `${this.apiUrl}/hotels`;
+    this.http.get<Hotel[]>(url).subscribe(data => {
       this.hotelsSignal.set(data);
     });
   }

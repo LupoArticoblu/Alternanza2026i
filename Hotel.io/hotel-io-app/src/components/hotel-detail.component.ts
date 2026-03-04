@@ -88,14 +88,14 @@ import { StarRatingComponent } from './star-rating.component';
               <button 
                 (click)="onToggleLike()"
                 class="flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors"
-                [class.bg-pink-50]="hotel().isLiked"
-                [class.border-pink-200]="hotel().isLiked"
-                [class.text-pink-600]="hotel().isLiked"
+                [class.bg-red-50]="hotel().isLiked"
+                [class.border-red-200]="hotel().isLiked"
+                [class.text-red-600]="hotel().isLiked"
                 [class.bg-gray-50]="!hotel().isLiked"
                 [class.border-gray-200]="!hotel().isLiked"
                 [class.text-gray-600]="!hotel().isLiked"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" [class.fill-current]="hotel().isLiked" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <svg xmlns="http://www.w3.org/2000/svg" [attr.fill]="hotel().isLiked ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
                 </svg>
                 {{ hotel().likes }} Likes
@@ -300,8 +300,13 @@ export class HotelDetailComponent {
   constructor(private hotelService: HotelService) {}
 
   onToggleLike() {
-    if (this.currentUser() && this.currentUser().role !== 'host'){
-      this.hotelService.toggleLike(this.hotel().id, this.currentUser().email);
+    const user = this.currentUser();
+    if (!user) {
+      alert("Please login to like hotels");
+      return;
+    }
+    if (user.role !== 'host'){
+      this.hotelService.toggleLike(this.hotel().id, user.email);
     }
   }
 
