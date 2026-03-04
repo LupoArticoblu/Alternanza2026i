@@ -95,10 +95,18 @@ import { StarRatingComponent } from './star-rating.component';
                 [class.border-gray-200]="!hotel().isLiked"
                 [class.text-gray-600]="!hotel().isLiked"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" [attr.fill]="hotel().isLiked ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" 
+                  class="w-5 h-5 transition-all duration-300"
+                  [class.text-red-600]="hotel().isLiked"
+                  [class.fill-red-600]="hotel().isLiked"
+                  [class.fill-none]="!hotel().isLiked"
+                  [class.scale-110]="hotel().isLiked">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
                 </svg>
-                {{ hotel().likes }} Likes
+                <span class="font-bold">{{ hotel().likes }}</span>
+                <span class="text-xs uppercase tracking-wider">{{ hotel().likes === 1 ? 'Like' : 'Likes' }}</span>
               </button>
             </div>
           </div>
@@ -219,50 +227,68 @@ import { StarRatingComponent } from './star-rating.component';
 
         <!-- Right Column: Add Review Form -->
         <div class="lg:col-span-1">
-          <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 sticky top-4">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">Write a Review</h3>
-            <div class="space-y-4">
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Rating</label>
-                <div class="flex gap-2">
-                  @for (star of [1,2,3,4,5]; track star) {
-                    <button 
-                      type="button"
-                      (click)="newReview.rating = star"
-                      class="focus:outline-none transition-transform hover:scale-110">
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        viewBox="0 0 24 24" 
-                        fill="currentColor" 
-                        [class.text-yellow-400]="star <= newReview.rating"
-                        [class.text-gray-300]="star > newReview.rating"
-                        class="w-8 h-8">
-                        <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" />
-                      </svg>
-                    </button>
-                  }
+          @if (currentUser()?.role !== 'host') {
+            <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 sticky top-4">
+              <h3 class="text-lg font-bold text-gray-800 mb-4">Write a Review</h3>
+              
+              @if (!currentUser()) {
+                <div class="text-center py-4">
+                  <p class="text-sm text-gray-500 mb-3">Login to share your experience</p>
+                  <button (click)="onToggleLike()" class="text-sm font-bold text-blue-600 hover:underline">Go to Login</button>
                 </div>
-              </div>
+              } @else {
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                    <div class="flex gap-2">
+                      @for (star of [1,2,3,4,5]; track star) {
+                        <button 
+                          type="button"
+                          (click)="newReview.rating = star"
+                          class="focus:outline-none transition-transform hover:scale-110">
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            viewBox="0 0 24 24" 
+                            fill="currentColor" 
+                            [class.text-yellow-400]="star <= newReview.rating"
+                            [class.text-gray-300]="star > newReview.rating"
+                            class="w-8 h-8">
+                            <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" />
+                          </svg>
+                        </button>
+                      }
+                    </div>
+                  </div>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Review</label>
-                <textarea 
-                  [(ngModel)]="newReview.comment"
-                  rows="4"
-                  placeholder="Share your experience..."
-                  class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border"
-                ></textarea>
-              </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Review</label>
+                    <textarea 
+                      [(ngModel)]="newReview.comment"
+                      rows="4"
+                      placeholder="Share your experience..."
+                      class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border"
+                    ></textarea>
+                  </div>
 
-              <button 
-                (click)="onSubmitReview()"
-                [disabled]="!isValidReview()"
-                class="w-full bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                Submit Review
-              </button>
+                  <button 
+                    (click)="onSubmitReview()"
+                    [disabled]="!isValidReview()"
+                    class="w-full bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Submit Review
+                  </button>
+                </div>
+              }
             </div>
-          </div>
+          } @else {
+            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100 flex flex-col items-center text-center">
+              <div class="bg-blue-100 p-3 rounded-full mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-blue-600">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+              </div>
+              <h3 class="font-bold text-blue-900 mb-2">Host Dashboard</h3>
+            </div>
+          }
         </div>
 
       </div>
@@ -302,9 +328,12 @@ export class HotelDetailComponent {
   onToggleLike() {
     const user = this.currentUser();
     if (!user) {
-      alert("Please login to like hotels");
+      // Invece di un alert, possiamo forzare il logout e mostrare login se necessario
+      // o semplicemente avvertire l'utente in modo più elegante
+      alert("Accedi per mettere like agli hotel!");
       return;
     }
+    
     if (user.role !== 'host'){
       this.hotelService.toggleLike(this.hotel().id, user.email);
     }
@@ -319,11 +348,16 @@ export class HotelDetailComponent {
   }
 
   onSubmitReview() {
-    if (this.isValidReview() && this.currentUser()) {
+    const user = this.currentUser();
+    if (this.isValidReview() && user) {
+      if (user.role === 'host') {
+        alert("Gli host non possono lasciare recensioni.");
+        return;
+      }
       this.hotelService.addReview(this.hotel().id, {
         rating: this.newReview.rating,
         comment: this.newReview.comment
-      }, this.currentUser().email);
+      }, user.email);
       // Reset commento
       this.newReview.comment = "";
     }

@@ -53,10 +53,14 @@ export class HotelService {
   }
   // metodo per recuperare gli hotel, usando automaticamente l'utente loggato se presente
   fetchHotels(){
-    const userId = this.currentUser()?.email;
-    const url = userId ? `${this.apiUrl}/hotels?user_id=${userId}` : `${this.apiUrl}/hotels`;
-    this.http.get<Hotel[]>(url).subscribe(data => {
-      this.hotelsSignal.set(data);
+    const user = this.currentUser();
+    let url = `${this.apiUrl}/hotels`;
+    if (user?.email) {
+      url += `?user_id=${encodeURIComponent(user.email)}`;
+    }
+    this.http.get<Hotel[]>(url).subscribe({
+      next: (data) => this.hotelsSignal.set(data),
+      error: (err) => console.error('Error fetching hotels:', err)
     });
   }
 
@@ -109,8 +113,15 @@ export class HotelService {
   }
 
   toggleLike(hotelId: string, user_id: string) {
-    this.http.post(`${this.apiUrl}/hotels/${hotelId}/like?user_id=${user_id}`,
-      {}).subscribe(() => this.fetchHotels());
+    const url = `${this.apiUrl}/hotels/${hotelId}/like?user_id=${encodeURIComponent(user_id)}`;
+    this.http.post(url, {}).subscribe({
+      next: () => this.fetchHotels(),
+      error: (err) => {
+        console.error('Like error:', err);
+        const detail = err.error?.detail || 'Unknown error';
+        alert(`Error: ${detail}`);
+      }
+    });
   }
 
   addReview(hotelId: string, reviewData: any, userId: string) {

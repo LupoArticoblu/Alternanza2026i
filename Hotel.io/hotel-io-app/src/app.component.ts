@@ -28,7 +28,12 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
               <button (click)="setView('login-user')" class="text-white text-sm hover:underline px-2">User</button>
               <button (click)="setView('login-host')" class="text-white text-sm hover:underline px-2 border-l border-white/30">Host</button>
             } @else {
-              <span class="text-xs text-blue-200 hidden md:inline">{{currentUser()?.email}}</span>
+              <div class="flex items-center gap-1.5 px-2 border-r border-white/20 mr-1">
+                <span class="text-xs text-blue-200 hidden md:inline">{{currentUser()?.email}}</span>
+                @if (currentUser()?.role === 'host') {
+                  <span class="bg-blue-500 text-[10px] px-1.5 py-0.5 rounded font-bold text-white uppercase tracking-wider border border-blue-400">Host</span>
+                }
+              </div>
               @if (currentUser()?.role === 'host') {
                 <button (click)="setView('login-host')" class="text-white text-sm hover:underline px-2">Dashboard Host</button>
               } @else {
@@ -77,17 +82,21 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
                       [alt]="hotel.name"
                       class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     >
-                    <div class="absolute top-3 right-3">
+                    <div class="absolute top-3 right-3 flex items-center gap-1.5">
+                      <span class="bg-white/90 text-gray-700 text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                        {{ hotel.likes }}
+                      </span>
                       @if(currentUser()?.role !== 'host'){
                        <button 
                         (click)="$event.stopPropagation(); toggleLike(hotel.id)"
-                        class="p-2 rounded-full bg-white/90 shadow-sm hover:bg-white transition-colors">
+                        class="p-2 rounded-full bg-white/90 shadow-sm hover:bg-white transition-all hover:scale-110 active:scale-95 group/heart">
                         <svg 
                           xmlns="http://www.w3.org/2000/svg" 
-                          [attr.fill]="hotel.isLiked ? 'currentColor' : 'none'"
-                          [class.text-red-500]="hotel.isLiked"
-                          [class.text-gray-400]="!hotel.isLiked"
-                          viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 transition-colors">
+                          viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" 
+                          class="w-5 h-5 transition-all duration-300"
+                          [class.fill-red-500]="hotel.isLiked"
+                          [class.fill-none]="!hotel.isLiked"
+                          [class.text-gray-400]="!hotel.isLiked">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
                         </svg>
                        </button>

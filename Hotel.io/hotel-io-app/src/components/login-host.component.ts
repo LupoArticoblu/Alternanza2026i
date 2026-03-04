@@ -50,7 +50,10 @@ import { HotelService, Hotel } from '../services/hotel.service';
           <div class="flex justify-between items-center pb-4 border-b border-gray-100">
             <div>
               <h2 class="text-xl font-bold text-gray-900">Dashboard Host</h2>
-              <p class="text-xs text-gray-500">{{loggedEmail}}</p>
+              <p class="text-xs text-gray-500 flex items-center gap-2">
+                {{loggedEmail}}
+                <span class="bg-blue-100 text-blue-600 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider border border-blue-200">Host</span>
+              </p>
             </div>
             <button (click)="logout()" class="text-sm font-medium text-red-500 hover:text-red-700 transition-colors px-3 py-1 rounded-md hover:bg-red-50">
               Logout
@@ -174,7 +177,7 @@ export class LoginHostComponent {
   private hotelService = inject(HotelService);
   hotels = this.hotelService.hotels;
 
-  isLogged = signal(false);
+
   isRegistering = signal(false);
 
   showForm = false;
@@ -183,7 +186,17 @@ export class LoginHostComponent {
   // Campi per il login
   loginEmail = '';
   loginPassword = '';
-  loggedEmail = '';
+  
+  // Utilizziamo un segnale calcolato per lo stato di login
+  isLogged = computed(() => {
+    const user = this.hotelService.currentUser();
+    return !!user && user.role === 'host';
+  });
+
+  // Utilizziamo l'email dal servizio
+  get loggedEmail() {
+    return this.hotelService.currentUser()?.email || '';
+  }
 
   //modello form
   hotelForm={
@@ -204,12 +217,14 @@ export class LoginHostComponent {
     if (this.loginEmail && this.loginPassword) {
       this.hotelService.login(this.loginEmail, this.loginPassword, "host").subscribe({
         next:(res: any) =>{
-          //login ok? segna email e password come loggati
-          this.loggedEmail = this.loginEmail;
-          this.hotelService.currentUser.set({email: this.loginEmail, role: 'host'});
-          this.isLogged.set(true);
+          //login ok? Il servizio aggiornerà isLogged automaticamente tramite computed
+          this.hotelService.currentUser.set({email: this.loginEmail, role: res.role});
           // fetch hotels to get liked status
           this.hotelService.fetchHotels();
+          // Se è un utente guest, lo mandiamo alla home
+          if (res.role === 'user') {
+            this.close.emit();
+          }
         }, 
         error:(err) =>{
           console.error('Host login error:', err);
@@ -241,9 +256,7 @@ export class LoginHostComponent {
   }
 
   logout(){
-    this.isLogged.set(false);
     this.hotelService.currentUser.set(null); //rimuovi l'utente loggato
-    this.loggedEmail = '';
     this.loginEmail = '';
     this.loginPassword = '';
     this.hotelService.fetchHotels(); // ricarica tutto senza filtro utente

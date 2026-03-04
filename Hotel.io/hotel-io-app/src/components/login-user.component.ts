@@ -76,7 +76,7 @@ export class LoginUserComponent {
   login(){
     this.hotelService.login(this.email, this.password, "user").subscribe({
       next: (res: any) => {
-        this.hotelService.currentUser.set({email: this.email, role:"user"});
+        this.hotelService.currentUser.set({email: this.email, role: res.role});
         this.hotelService.fetchHotels();
         this.close.emit(); //torna alla home
       },

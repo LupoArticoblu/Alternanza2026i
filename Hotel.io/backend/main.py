@@ -147,6 +147,11 @@ def add_review(hotel_id:str, review:schemas.ReviewCreate, user_id:str, db:Sessio
   if not db_hotel:
     raise HTTPException(status_code=404, detail="Hotel not found")
 
+  #limitiamo le recensioni agli utenti guest
+  user = db.query(models.User).filter(models.User.id == user_id).first()
+  if not user or user.role == "host":
+    raise HTTPException(status_code=403, detail="Only guests can review hotels")
+
   #creazione recensione
   new_review = models.Review(
     id=str(uuid.uuid4()), # uuid è il modulo per generare id casuali
