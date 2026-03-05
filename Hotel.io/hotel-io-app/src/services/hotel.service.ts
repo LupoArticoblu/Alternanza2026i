@@ -204,7 +204,7 @@ export class HotelService {
         ${reviewsText}
       `; 
       const body = {
-        model: "mistral",
+        model: "phi3",
         prompt: prompt,
         stream: false,
         format: "json"
@@ -222,7 +222,6 @@ export class HotelService {
           this.hotelsSignal.update(hotels => hotels.map(h => h.id === hotelId ? { ...h, isAnalyzing: false}: h));
         }
        });
-       alert("Ollama doesn't work")
     }
     catch(error){
       console.error("Error analyzing reviews:", error);
