@@ -221,10 +221,14 @@ export class HotelService {
           //in caso di errore, imposta isAnalyzing a false
           this.hotelsSignal.update(hotels => hotels.map(h => h.id === hotelId ? { ...h, isAnalyzing: false}: h));
         }
-       })
+       });
+       alert("Ollama doesn't work")
     }
     catch(error){
-
+      console.error("Error analyzing reviews:", error);
+      //Questa riga serve a dire all'interfaccia: "C'è stato un errore, smetti di mostrare l'animazione di caricamento per questo hotel specifico e torna allo stato normale" così l'utente non rimane con il pulsante bloccato su "Analyzing..." per sempre
+      this.hotelsSignal.update(hotels => hotels.map(h => h.id === hotelId ? { ...h, isAnalyzing: false}: h)
+      );
     }
   }
 } 
