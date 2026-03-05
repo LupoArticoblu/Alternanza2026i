@@ -139,6 +139,7 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
            <app-hotel-detail 
              [hotel]="selectedHotel()!" 
              (close)="setView('list')" 
+             (loginRedirect)="setView('login-user')" 
            />
         }
       </main>

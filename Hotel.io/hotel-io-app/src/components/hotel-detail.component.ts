@@ -234,7 +234,7 @@ import { StarRatingComponent } from './star-rating.component';
               @if (!currentUser()) {
                 <div class="text-center py-4">
                   <p class="text-sm text-gray-500 mb-3">Login to share your experience</p>
-                  <button (click)="onToggleLike()" class="text-sm font-bold text-blue-600 hover:underline">Go to Login</button>
+                  <button (click)="watchLoginUser()" class="text-sm font-bold text-blue-600 hover:underline">Go to Login</button>
                 </div>
               } @else {
                 <div class="space-y-4">
@@ -265,8 +265,9 @@ import { StarRatingComponent } from './star-rating.component';
                     <textarea 
                       [(ngModel)]="newReview.comment"
                       rows="4"
+                      (input)="adjustTextarea($event)"
                       placeholder="Share your experience..."
-                      class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border"
+                      class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3 border resize-none overflow-hidden"
                     ></textarea>
                   </div>
 
@@ -299,6 +300,7 @@ import { StarRatingComponent } from './star-rating.component';
 export class HotelDetailComponent {
   hotel = input.required<Hotel>();
   close = output<void>();
+  loginRedirect = output<void>();
   currentUser = this.hotelService.currentUser;
 
   currentImageIndex = signal(0);
@@ -323,7 +325,11 @@ export class HotelDetailComponent {
     comment: ''
   };
 
-  constructor(private hotelService: HotelService) {}
+  constructor(private hotelService: HotelService) {}  //crea la funzione watchLoginUser che porterà alla pagina di login
+
+  watchLoginUser() {
+    this.loginRedirect.emit();
+  }
 
   onToggleLike() {
     const user = this.currentUser();
@@ -360,6 +366,15 @@ export class HotelDetailComponent {
       }, user.email);
       // Reset commento
       this.newReview.comment = "";
+      // Reset altezza textarea
+      const textarea = document.querySelector('textarea');
+      if (textarea) textarea.style.height = 'auto';
     }
+  }
+
+  adjustTextarea(event: any) {
+    const textarea = event.target;
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
   }
 }
