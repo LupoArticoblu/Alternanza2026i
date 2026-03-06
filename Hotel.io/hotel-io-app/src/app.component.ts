@@ -51,7 +51,7 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
         </div>
       </nav>
 
-      <!-- Main Content -->
+      <!-- Main -->
       <main class="flex-grow container mx-auto p-4 md:p-6">
         <!-- View: Login Host -->
 @if (currentView() === 'login-host') {
@@ -63,7 +63,7 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
   <app-login-user (close)="setView('list')" />
 }
 
-        <!-- View: List Hotels -->
+        <!-- View: Lista Hotel -->
         @if (currentView() === 'list') {
           <div class="space-y-6 animate-fade-in">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -134,7 +134,7 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
           </div>
         }
 
-        <!-- View: Detail -->
+        <!-- View: Dettaglio -->
         @if (currentView() === 'detail' && selectedHotel()) {
            <app-hotel-detail 
              [hotel]="selectedHotel()!" 

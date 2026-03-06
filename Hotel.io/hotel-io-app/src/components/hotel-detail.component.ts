@@ -118,8 +118,13 @@ import { StarRatingComponent } from './star-rating.component';
             <div class="flex items-center justify-between mb-6">
               <h3 class="text-xl font-semibold text-gray-800">Guest Reviews ({{ hotel().reviews.length }})</h3>
               
-              <!-- AI Analyze Button -->
-               @if (hotel().reviews.length > 0) {
+               <!-- 
+                 PULSANTE AI SUMMARY INTELLIGENTE: 
+                 Mostrato SOLO se:
+                 1. L'hotel ha almeno 1 recensione
+                 2. E NON esiste ancora un riassunto (quindi nessun utente lo ha ancora generato)
+               -->
+               @if (hotel().reviews.length > 0 && !hotel().aiAnalysis) {
                  <button 
                   (click)="analyzeWithAI()"
                   [disabled]="hotel().isAnalyzing"

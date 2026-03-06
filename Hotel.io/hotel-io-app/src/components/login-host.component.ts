@@ -92,9 +92,9 @@ import { HotelService, Hotel } from '../services/hotel.service';
                   <div class="col-span-2">
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Hotel Images</label>
                     <div class="flex flex-col gap-3">
-                      @if (hotelForm.images.length > 0) {
+                      @if (hotelForm.images().length > 0) {
                         <div class="flex gap-2 flex-wrap">
-                          @for (img of hotelForm.images; track $index) {
+                          @for (img of hotelForm.images(); track $index) {
                             <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 group shadow-sm">
                               <img [src]="img" class="w-full h-full object-cover" alt="Preview">
                               @if ($index === 0) {
@@ -205,7 +205,8 @@ export class LoginHostComponent {
     description:'',
     price: null as number | null,
     imageUrl: '',
-    images: [] as string[],
+    //usiamo signal per vedere le immagini immesse in preview
+    images: signal<string[]>([]),
   };
 
   toggleMode() {
@@ -277,7 +278,7 @@ export class LoginHostComponent {
       description: hotel.description,
       price: hotel.price,
       imageUrl: hotel.imageUrl,
-      images: hotel.images ? [...hotel.images] : (hotel.imageUrl ? [hotel.imageUrl] : [])
+      images: signal<string[]>(hotel.images ? [...hotel.images] : (hotel.imageUrl ? [hotel.imageUrl] : []))
     };
     //scroll in cima
     this.showForm = true;
@@ -290,9 +291,9 @@ export class LoginHostComponent {
       Array.from(files).forEach(file => {
         const reader = new FileReader();
         reader.onload = (e: any) => {
-          this.hotelForm.images.push(e.target.result);
+          this.hotelForm.images.update((prev) => [...prev, e.target.result]);
           // La prima immagine diventa la cover (imageUrl)
-          if (this.hotelForm.images.length === 1) {
+          if (this.hotelForm.images().length === 1) {
             this.hotelForm.imageUrl = e.target.result;
           }
         };
@@ -304,8 +305,8 @@ export class LoginHostComponent {
   }
 
   removeImage(index: number) {
-    this.hotelForm.images.splice(index, 1);
-    this.hotelForm.imageUrl = this.hotelForm.images[0] ?? '';
+    this.hotelForm.images.update((prev) => prev.filter((_, i) => i !== index));
+    this.hotelForm.imageUrl = this.hotelForm.images()[0] ?? '';
   }
   //cancella hotel
   deleteHotel(id: string){
@@ -321,7 +322,7 @@ export class LoginHostComponent {
       description:'',
       price:null,
       imageUrl:'',
-      images:[],
+      images: signal<string[]>([]),
     };
     this.editingId = null;
   }
@@ -334,14 +335,14 @@ export class LoginHostComponent {
     if(!this.isValid()) return;
 
     const fallbackUrl = `https://picsum.photos/800/600?random=${Math.floor(Math.random()*1000)}`;
-    const images = this.hotelForm.images.length > 0 ? this.hotelForm.images : [fallbackUrl];
+    const imagesValues = this.hotelForm.images().length > 0 ? this.hotelForm.images() : [fallbackUrl];
     const hotelData = {
       name: this.hotelForm.name,
       location: this.hotelForm.location,
       description: this.hotelForm.description,
       price: this.hotelForm.price,
-      imageUrl: images[0],
-      images: images
+      imageUrl: imagesValues[0],
+      images: imagesValues
     };
 
     if(this.editingId){

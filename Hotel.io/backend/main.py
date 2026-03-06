@@ -89,6 +89,16 @@ def get_hotels(user_id: str = None, db: Session = Depends(get_db)):
     hotel_dict = {c.name: getattr(hotel, c.name) for c in hotel.__table__.columns}
     hotel_dict['reviews'] = hotel.reviews
     hotel_dict['isLiked'] = liked
+    
+    # Decodifichiamo l'ai_summary in modo che FastApi lo converta nell'oggetto corretto
+    if hotel.ai_summary:
+      try:
+        hotel_dict['aiAnalysis'] = json.loads(hotel.ai_summary)
+      except:
+        hotel_dict['aiAnalysis'] = None
+    else:
+      hotel_dict['aiAnalysis'] = None
+
     result.append(schemas.Hotel.model_validate(hotel_dict))
   return result
 
@@ -163,6 +173,11 @@ def add_review(hotel_id:str, review:schemas.ReviewCreate, user_id:str, db:Sessio
     date=datetime.now().strftime("%Y-%m-%d")
   )
 
+  # SETTA IL SUMMARY AI A NULLO:
+  # Quando viene aggiunta una nuova recensione, le informazioni cambiano. 
+  # Invalidiamo (resettiamo) il summary esistente, cosí il prossimo utente 
+  # che visiterà la pagina dovrà generarne uno nuovo aggiornato.
+  db_hotel.ai_summary = None 
   db.add(new_review)
   db.commit()
   db.refresh(new_review)
@@ -193,3 +208,18 @@ def like_hotel(hotel_id:str, user_id:str, db:Session = Depends(get_db)):
 
   db.commit()
   return {"total_likes": db_hotel.likes}
+
+# Endpoint per ricevere e salvare nel DB il sommario AI generato dal frontend.
+# In questo modo il calcolo pesante di Ollama viene fatto una volta sola,
+# e tutti gli utenti successivi leggeranno subito il risultato.
+@app.post("/hotels/{hotel_id}/ai_summary")
+def save_ai_summary(hotel_id: str, payload: dict, db: Session = Depends(get_db)):
+  db_hotel = db.query(models.Hotel).filter(models.Hotel.id == hotel_id).first()
+  if not db_hotel:
+    raise HTTPException(status_code=404, detail="Hotel not found")
+  
+  # Salviamo il JSON stringificato nel campo testuale del database.
+  db_hotel.ai_summary = json.dumps(payload)
+  db.commit()
+  
+  return {"status": "success"}

@@ -131,6 +131,12 @@ export class HotelService {
   async analyzeReviews(hotelId: string) {
     const hotel = this.hotelsSignal().find(h => h.id === hotelId);
     if (!hotel || hotel.reviews.length === 0) return;
+    
+    // EVITARE DOPPIE CHIAMATE
+    // Se l'analisi c'è già (es. l'ha già generata qualcun altro e noi
+    // l'abbiamo scaricata assieme ai dati dell'hotel), interrompiamo 
+    // l'esecuzione senza chiamare Ollama di nuovo.
+    if (hotel.aiAnalysis) return; 
 
     // Set loading state
     this.hotelsSignal.update(hotels =>
@@ -215,6 +221,12 @@ export class HotelService {
           const analysis: AIAnalysis = JSON.parse(res.response);
           //trova l'hotel e aggiorna analisi
           this.hotelsSignal.update(hotels => hotels.map(h => h.id === hotelId ? { ...h, aiAnalysis: analysis, isAnalyzing: false}: h));
+          
+          // SALVATAGGIO PER TUTTI GLI UTENTI
+          // Inviamo il risultato al backend "dietro le quinte" per salvarlo 
+          // nel database. In questo modo il lavoro compiuto da Ollama è permanente
+          // e accessibile istantaneamente agli altri utenti.
+          this.http.post(`${this.apiUrl}/hotels/${hotelId}/ai_summary`, analysis).subscribe();
         },
         error: (err) =>{
           console.error("Error analyzing reviews:", err);

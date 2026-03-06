@@ -46,6 +46,7 @@ class Hotel(Base):
   price = Column(Float)
   imageUrl = Column(String)
   images = Column(JsonList, default=list)
+  ai_summary = Column(String, nullable=True) # Campo per il riassunto AI generato JSON
   #relazioni con la tabella reviews
   reviews = relationship("Review", backref="hotel", cascade= "all, delete-orphan")
   owner_id = Column(String, ForeignKey('users.id'))
