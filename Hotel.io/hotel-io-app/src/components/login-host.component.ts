@@ -1,4 +1,4 @@
-import {Component, EventEmitter, inject, Output, signal, computed} from '@angular/core';
+import {Component, EventEmitter, inject, Output, signal, computed, NgZone} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import { HotelService, Hotel } from '../services/hotel.service';
@@ -175,6 +175,8 @@ export class LoginHostComponent {
   @Output() close = new EventEmitter<void>();
 
   private hotelService = inject(HotelService);
+  // zone serve a forzare il refresh della UI quando accadono eventi asincroni (come FileReader)
+  private zone = inject(NgZone);
   hotels = this.hotelService.hotels;
 
 
@@ -270,16 +272,16 @@ export class LoginHostComponent {
   }
 
   // modifica
+  // modifica: carichiamo i dati nel form esistente invece di sovrascriverlo per non rompere il Signal
   editHotel(hotel: Hotel){
     this.editingId = hotel.id;
-    this.hotelForm = {
-      name: hotel.name,
-      location: hotel.location,
-      description: hotel.description,
-      price: hotel.price,
-      imageUrl: hotel.imageUrl,
-      images: signal<string[]>(hotel.images ? [...hotel.images] : (hotel.imageUrl ? [hotel.imageUrl] : []))
-    };
+    this.hotelForm.name = hotel.name;
+    this.hotelForm.location = hotel.location;
+    this.hotelForm.description = hotel.description;
+    this.hotelForm.price = hotel.price;
+    this.hotelForm.imageUrl = hotel.imageUrl;
+    this.hotelForm.images.set(hotel.images ? [...hotel.images] : (hotel.imageUrl ? [hotel.imageUrl] : []));
+    
     //scroll in cima
     this.showForm = true;
     window.scrollTo(0,0);
@@ -291,11 +293,18 @@ export class LoginHostComponent {
       Array.from(files).forEach(file => {
         const reader = new FileReader();
         reader.onload = (e: any) => {
-          this.hotelForm.images.update((prev) => [...prev, e.target.result]);
-          // La prima immagine diventa la cover (imageUrl)
-          if (this.hotelForm.images().length === 1) {
-            this.hotelForm.imageUrl = e.target.result;
-          }
+          // Usiamo zone.run per forzare Angular a vedere il cambiamento subito (risolve ritardo preview)
+          this.zone.run(() => {
+            const result = e.target.result;
+            // Controllo ed evitiamo di aggiungere la stessa immagine più volte (duplicati)
+            if (!this.hotelForm.images().includes(result)) {
+              this.hotelForm.images.update((prev) => [...prev, result]);
+              // La prima immagine diventa la cover (imageUrl) se non c'è già
+              if (this.hotelForm.images().length === 1) {
+                this.hotelForm.imageUrl = result;
+              }
+            }
+          });
         };
         reader.readAsDataURL(file);
       });
@@ -314,17 +323,15 @@ export class LoginHostComponent {
       this.hotelService.deleteHotel(id);
     }
   }
-  //resetta il form
+  // resetta il form aggiornando i singoli campi (mantiene l'istanza del signal)
   resetForm(){
-    this.hotelForm ={
-      name:'',
-      location:'',
-      description:'',
-      price:null,
-      imageUrl:'',
-      images: signal<string[]>([]),
-    };
     this.editingId = null;
+    this.hotelForm.name = '';
+    this.hotelForm.location = '';
+    this.hotelForm.description = '';
+    this.hotelForm.price = null;
+    this.hotelForm.imageUrl = '';
+    this.hotelForm.images.set([]);
   }
   //Verifica dei campi obbligatori
   isValid(){

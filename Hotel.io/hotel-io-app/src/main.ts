@@ -1,13 +1,12 @@
-
-import '@angular/compiler';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideHttpClient } from '@angular/common/http';
-import { provideZonelessChangeDetection } from '@angular/core';
-import { App } from './app/app';
+// Importiamo AppComponent direttamente invece del boilerplate generato in src/app/
+import { AppComponent } from './app.component';
 
-bootstrapApplication(App, {
+bootstrapApplication(AppComponent, {
   providers: [
-    provideZonelessChangeDetection(),
+    // Rimosso provideZonelessChangeDetection per usare il sistema standard di Angular 
+    // e garantire compatibilità con le librerie/metodi scelti (come NgZone)
     provideHttpClient(),
   ],
 }).catch((err) => console.error(err));
