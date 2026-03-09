@@ -1,5 +1,7 @@
 {
   "dependencies": {
-    "@angular/cli": "^21.1.4"
+    "@angular/cli": "^21.1.4",
+    "@tailwindcss/vite": "^4.2.1",
+    "tailwindcss": "^4.2.1"
   }
 }

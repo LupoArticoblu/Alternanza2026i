@@ -5,7 +5,7 @@ from typing import List
 from datetime import datetime
 import uuid
 
-import models, schemas, database
+import models, schemas, json, database
 from database import engine, get_db
 from fastapi.middleware.cors import CORSMiddleware
 #crea le tabelle nel db
@@ -36,7 +36,7 @@ app.add_middleware(
         "http://hotel.local:3000"
     ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 

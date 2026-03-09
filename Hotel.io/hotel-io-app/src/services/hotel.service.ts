@@ -1,6 +1,5 @@
 import { Injectable, signal, computed, inject, model } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { hasSubscribers } from 'diagnostics_channel';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 export interface Review {
   id: string;
@@ -44,12 +43,16 @@ export class HotelService {
   private hotelsSignal = signal<Hotel[]>([]); //dove andranno segnati/inseriti i vari hotel
   //metodo login
   login(email: string, password: string, role: string){
-    return this.http.post(`${this.apiUrl}/login`, {email, password, role: role});
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+    return this.http.post(`${this.apiUrl}/login`, {email: cleanEmail, password: cleanPassword, role: role});
   }
   //metodo registrazione
   register(email: string, password: string, role: string){
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
     //chiamata all'endpoint register del backend e crea utente
-    return this.http.post(`${this.apiUrl}/register`, {email, password, role: role});
+    return this.http.post(`${this.apiUrl}/register`, {email: cleanEmail, password: cleanPassword, role: role});
   }
   // metodo per recuperare gli hotel, usando automaticamente l'utente loggato se presente
   fetchHotels(){

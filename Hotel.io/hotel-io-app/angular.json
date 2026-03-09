@@ -21,7 +21,8 @@
             "tsConfig": "tsconfig.json",
             "assets": [
               { "glob": "**/*", "input": "public", "output": "/" }
-            ]
+            ],
+            "styles": ["index.css"]
           },
           "configurations": {
             "production": {

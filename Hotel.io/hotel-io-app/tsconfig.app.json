@@ -12,7 +12,6 @@
     "src/**/*.ts"
   ],
   "exclude": [
-    "src/**/*.spec.ts",
-    "src/old-boilerplate"
+    "src/**/*.spec.ts"
   ]
 }

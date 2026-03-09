@@ -1,5 +1,6 @@
  // JIT compilation requirement
 import { bootstrapApplication } from '@angular/platform-browser';
+import './index.css';
 import { AppComponent } from './src/app.component';
 import { provideZonelessChangeDetection } from '@angular/core';
 
