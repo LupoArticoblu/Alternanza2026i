@@ -1,6 +1,9 @@
 #costruiamo un suolo lunare e facciamo atterrare un modulo lunare
 import gymnasium as gym
-from stable_baselines3 import PPO, Monitor, Configure, BaseCallBack
+from stable_baselines3 import PPO 
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.logger import configure
+from stable_baselines3.common.callbacks import BaseCallBack
 
 #creiamo una callback per visualizzare l'ambiente
 class RenderCallBack(BaseCallBack):
@@ -24,5 +27,46 @@ reain_env = Monitor(train_env)
 log_path = "./ppo_lunar_logs/"
 new_logger = configure(log_path, ["tensorboard"])
 
+#istanziamo il modello PPO
+model = PPO(
+    #impostiamo la rete neurale
+    "MlpPolicy",
+    #modello pa applicare all'ambiente
+    train_env,
+    verbose = 1,
+    learning_rate =3*10-4,
+    n_steps = 2048,
+    batch_size=64,
+    gamma=0.99,
+    gae_lambda=0.95,
+    ent_coef=0.5,
+    vf_coef=0.5,
+    max_grad_norm=0.5
+)
+#logger
+model.set_logger(new_logger)
+#callback
+render_callback = RenderCallBack(train_env, freq=100)
+#addestramento
+model.learn(total_timesteps=500000, callback=render_callback)
 
+model.save("ppo_lunar_lander")
 
+model = PPO.load("ppo_lunar_lander")
+
+#ambiente test
+test_env = gym.make("LunarLander-v2", render_mode = "human")
+
+while true:
+    observation, info = test_env.reset(seed=42)
+    done = False
+    total_reward =0
+    #ciclo interno sul numero di predizioni
+    while not done:
+        action, _ = model.predict(observation, deterministic=True) #<- vogliamo le risposte deterministiche fatte precedentemente
+        observation, reward, terminated, truncated, info = test_env.step(action)
+        done = terminated or truncated
+        total_reward += reward
+    print("Episode finished! Total reward:", total_reward)
+
+        
