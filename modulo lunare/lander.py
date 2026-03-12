@@ -3,13 +3,13 @@ import gymnasium as gym
 from stable_baselines3 import PPO 
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.logger import configure
-from stable_baselines3.common.callbacks import BaseCallBack
+from stable_baselines3.common.callbacks import BaseCallback
 
 #creiamo una callback per visualizzare l'ambiente
-class RenderCallBack(BaseCallBack):
+class RenderCallback(BaseCallback):
     #definiamo il metodo costruttore
     def __init__(self, env, freq= 100, verbose= 0):
-        super(RenderCallBack,self).__init__(verbose)
+        super(RenderCallback,self).__init__(verbose)
         self.env = env
         self.render_freq = freq
         
@@ -20,7 +20,7 @@ class RenderCallBack(BaseCallBack):
         return True
 
 #costruiamo un istanza nel nostro ambiete d'apprendimento
-train_env = gym.make("LunarLander-v2", render_mode = "human")
+train_env = gym.make("LunarLander-v3", render_mode = "human")
 #impostiamo i monitor per poter ricevere i log
 reain_env = Monitor(train_env)
 #path per i log
