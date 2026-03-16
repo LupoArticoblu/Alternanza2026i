@@ -86,8 +86,11 @@ import { HotelService, Hotel } from '../services/hotel.service';
 
                 <div class="grid grid-cols-2 gap-3">
                   <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Price / Night</label>
                     <input type="number" [(ngModel)]="hotelForm.price" placeholder="€" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Distance from Center (km)</label>
+                    <input type="number" step="0.1" [(ngModel)]="hotelForm.distanceFromCenter" placeholder="km" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                   </div>
                   <div class="col-span-2">
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Hotel Images</label>
@@ -206,6 +209,7 @@ export class LoginHostComponent {
     location: '',
     description:'',
     price: null as number | null,
+    distanceFromCenter: null as number | null,
     imageUrl: '',
     //usiamo signal per vedere le immagini immesse in preview
     images: signal<string[]>([]),
@@ -285,6 +289,7 @@ export class LoginHostComponent {
     this.hotelForm.location = hotel.location;
     this.hotelForm.description = hotel.description;
     this.hotelForm.price = hotel.price;
+    this.hotelForm.distanceFromCenter = hotel.distanceFromCenter ?? null;
     this.hotelForm.imageUrl = hotel.imageUrl;
     this.hotelForm.images.set(hotel.images ? [...hotel.images] : (hotel.imageUrl ? [hotel.imageUrl] : []));
     
@@ -336,6 +341,7 @@ export class LoginHostComponent {
     this.hotelForm.location = '';
     this.hotelForm.description = '';
     this.hotelForm.price = null;
+    this.hotelForm.distanceFromCenter = null;
     this.hotelForm.imageUrl = '';
     this.hotelForm.images.set([]);
   }
@@ -354,6 +360,7 @@ export class LoginHostComponent {
       location: this.hotelForm.location,
       description: this.hotelForm.description,
       price: this.hotelForm.price,
+      distanceFromCenter: this.hotelForm.distanceFromCenter,
       imageUrl: imagesValues[0],
       images: imagesValues
     };

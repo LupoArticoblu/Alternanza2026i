@@ -19,6 +19,7 @@ class HotelBase(BaseModel):
   location:str
   description:str
   price:float
+  distanceFromCenter: Optional[float] = None
   imageUrl: Optional[str] = None
   images: Optional[List[str]] = []
 

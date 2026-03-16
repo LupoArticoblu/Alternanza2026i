@@ -44,6 +44,7 @@ class Hotel(Base):
   location = Column(String)
   description = Column(String)
   price = Column(Float)
+  distanceFromCenter = Column(Float, nullable=True)
   imageUrl = Column(String)
   images = Column(JsonList, default=list)
   ai_summary = Column(String, nullable=True) # Campo per il riassunto AI generato JSON

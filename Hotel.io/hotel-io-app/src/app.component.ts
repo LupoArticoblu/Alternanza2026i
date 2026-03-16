@@ -115,12 +115,22 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
                     <div class="flex justify-between items-start mb-2">
                       <h3 class="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">{{ hotel.name }}</h3>
                     </div>
-                    <p class="text-sm text-gray-500 mb-4 flex items-center gap-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                      </svg>
-                      {{ hotel.location }}
+                    <p class="text-sm text-gray-500 mb-4 flex items-center flex-wrap gap-x-3 gap-y-1">
+                      <span class="flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                        </svg>
+                        {{ hotel.location }}
+                      </span>
+                      @if (hotel.distanceFromCenter !== undefined) {
+                        <span class="flex items-center gap-1 text-[#008009] font-medium">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                          </svg>
+                          {{ hotel.distanceFromCenter }} km from center
+                        </span>
+                      }
                     </p>
                     <p class="text-gray-600 text-sm line-clamp-2 mb-4 flex-grow">{{ hotel.description }}</p>
                     <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">

@@ -20,6 +20,12 @@ def run_migrations():
             conn.commit()
         except Exception:
             pass  # colonna già esistente
+        
+        try:
+            conn.execute(text("ALTER TABLE hotels ADD COLUMN distanceFromCenter FLOAT"))
+            conn.commit()
+        except Exception:
+            pass  # colonna già esistente
 
 run_migrations()
 

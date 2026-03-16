@@ -1,52 +1,52 @@
 {
-  "hash": "3a4f12b0",
-  "configHash": "aea57457",
-  "lockfileHash": "d14aaf5f",
-  "browserHash": "7d07bf23",
+  "hash": "733cb3a2",
+  "configHash": "423ec308",
+  "lockfileHash": "6cb0b1c8",
+  "browserHash": "a002c4e3",
   "optimized": {
     "@angular/common": {
       "src": "../../../../../../node_modules/@angular/common/fesm2022/common.mjs",
       "file": "@angular_common.js",
-      "fileHash": "d23cba70",
+      "fileHash": "46722eae",
       "needsInterop": false
     },
     "@angular/common/http": {
       "src": "../../../../../../node_modules/@angular/common/fesm2022/http.mjs",
       "file": "@angular_common_http.js",
-      "fileHash": "84793213",
+      "fileHash": "077c44ac",
       "needsInterop": false
     },
     "@angular/core": {
       "src": "../../../../../../node_modules/@angular/core/fesm2022/core.mjs",
       "file": "@angular_core.js",
-      "fileHash": "eb366c4d",
+      "fileHash": "43fe39e2",
       "needsInterop": false
     },
     "@angular/forms": {
       "src": "../../../../../../node_modules/@angular/forms/fesm2022/forms.mjs",
       "file": "@angular_forms.js",
-      "fileHash": "f0f92c49",
+      "fileHash": "db2cea9d",
       "needsInterop": false
     },
     "@angular/platform-browser": {
       "src": "../../../../../../node_modules/@angular/platform-browser/fesm2022/platform-browser.mjs",
       "file": "@angular_platform-browser.js",
-      "fileHash": "06f6b01e",
+      "fileHash": "1ff6935d",
       "needsInterop": false
     }
   },
   "chunks": {
-    "chunk-F4RMVOOJ": {
-      "file": "chunk-F4RMVOOJ.js"
+    "chunk-E345AB36": {
+      "file": "chunk-E345AB36.js"
     },
-    "chunk-ZWSCSALK": {
-      "file": "chunk-ZWSCSALK.js"
+    "chunk-FPWWLGLY": {
+      "file": "chunk-FPWWLGLY.js"
     },
-    "chunk-AV4A2XR4": {
-      "file": "chunk-AV4A2XR4.js"
+    "chunk-7OHFJVSE": {
+      "file": "chunk-7OHFJVSE.js"
     },
-    "chunk-42BINX4R": {
-      "file": "chunk-42BINX4R.js"
+    "chunk-7UED4MGT": {
+      "file": "chunk-7UED4MGT.js"
     }
   }
 }

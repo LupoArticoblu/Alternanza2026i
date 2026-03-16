@@ -27,6 +27,7 @@ export interface Hotel {
   likes: number;
   isLiked: boolean;
   reviews: Review[];
+  distanceFromCenter?: number;
   aiAnalysis?: AIAnalysis;
   isAnalyzing?: boolean;
 }
