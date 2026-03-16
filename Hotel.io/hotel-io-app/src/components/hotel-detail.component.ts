@@ -75,7 +75,7 @@ import { StarRatingComponent } from './star-rating.component';
             @if (hotel().distanceFromCenter !== undefined) {
               <span class="flex items-center text-green-400 font-semibold text-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-1">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.5 3.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z M14 5 L12 15 M13.5 8 L17 11 L19.5 6.5 M13.5 8 L10 7 L7.5 11.5 M12 15 L15.5 13 L19 19 M12 15 L8.5 17 L6 12.5" />
                 </svg>
                 {{ hotel().distanceFromCenter }} km from center
               </span>

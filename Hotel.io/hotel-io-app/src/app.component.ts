@@ -23,6 +23,46 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
             </svg>
             <span class="text-xl font-bold tracking-tight">Hotel.io</span>
           </div>
+
+          <!-- Search & Filters -->
+          <div class="hidden lg:flex flex-grow max-w-2xl mx-8 bg-white/10 rounded-full p-1 border border-white/20 backdrop-blur-sm">
+            <div class="flex-grow flex items-center px-4 border-r border-white/10">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 text-white/60 mr-2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+              </svg>
+              <input 
+                type="text" 
+                [ngModel]="searchQuery()"
+                (ngModelChange)="searchQuery.set($event)"
+                placeholder="Where are you going?" 
+                class="bg-transparent border-none text-white text-sm placeholder-white/50 focus:ring-0 w-48 outline-none"
+              >
+            </div>
+            <div class="flex items-center px-4 border-r border-white/10">
+              <span class="text-white/40 text-xs mr-2">$</span>
+              <input 
+                type="number" 
+                [ngModel]="maxPrice()"
+                (ngModelChange)="maxPrice.set($event)"
+                placeholder="Max price" 
+                class="bg-transparent border-none text-white text-sm placeholder-white/50 focus:ring-0 w-28 outline-none"
+              >
+            </div>
+            <div class="flex items-center px-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 text-white/60 mr-2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.5 3.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z M14 5 L12 15 M13.5 8 L17 11 L19.5 6.5 M13.5 8 L10 7 L7.5 11.5 M12 15 L15.5 13 L19 19 M12 15 L8.5 17 L6 12.5" />
+              </svg>
+              <input 
+                type="number" 
+                [ngModel]="maxDistance()"
+                (ngModelChange)="maxDistance.set($event)"
+                placeholder="Max distance" 
+                class="bg-transparent border-none text-white text-sm placeholder-white/50 focus:ring-0 w-40 outline-none"
+              >
+            </div>
+          </div>
+
           <div class="flex items-center gap-2">
             @if (!currentUser()) {
               <button (click)="setView('login-user')" class="text-white text-sm hover:underline px-2">User</button>
@@ -124,9 +164,9 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
                         {{ hotel.location }}
                       </span>
                       @if (hotel.distanceFromCenter !== undefined) {
-                        <span class="flex items-center gap-1 text-[#008009] font-medium">
+                        <span class="flex items-center gap-1 text-green-600 font-medium text-xs">
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.5 3.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z M14 5 L12 15 M13.5 8 L17 11 L19.5 6.5 M13.5 8 L10 7 L7.5 11.5 M12 15 L15.5 13 L19 19 M12 15 L8.5 17 L6 12.5" />
                           </svg>
                           {{ hotel.distanceFromCenter }} km from center
                         </span>
@@ -176,11 +216,40 @@ export class AppComponent {
   selectedHotelId = signal<string | null>(null);
   showLikesOnly = signal(false);
 
+  // Filtri di ricerca
+  searchQuery = signal('');
+  maxPrice = signal<number | null>(null);
+  maxDistance = signal<number | null>(null);
+
   filteredHotels = computed(() => {
     let list = this.hotels();
+    
+    // Filtro per Like
     if (this.showLikesOnly()) {
       list = list.filter(h => h.isLiked);
     }
+
+    // Filtro per Luogo (Search Query)
+    const query = this.searchQuery().toLowerCase().trim();
+    if (query) {
+      list = list.filter(h => 
+        h.location.toLowerCase().includes(query) || 
+        h.name.toLowerCase().includes(query)
+      );
+    }
+
+    // Filtro per Prezzo
+    const price = this.maxPrice();
+    if (price !== null && price > 0) {
+      list = list.filter(h => h.price <= price);
+    }
+
+    // Filtro per Distanza
+    const dist = this.maxDistance();
+    if (dist !== null && dist > 0) {
+      list = list.filter(h => h.distanceFromCenter !== undefined && h.distanceFromCenter <= dist);
+    }
+
     return list;
   });
   
@@ -208,6 +277,13 @@ export class AppComponent {
     this.hotelService.fetchHotels();
     this.setView('list');
     this.showLikesOnly.set(false);
+    this.resetFilters();
+  }
+
+  resetFilters() {
+    this.searchQuery.set('');
+    this.maxPrice.set(null);
+    this.maxDistance.set(null);
   }
 
   toggleLike(id: string) {
