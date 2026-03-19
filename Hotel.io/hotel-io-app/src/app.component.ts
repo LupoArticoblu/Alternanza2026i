@@ -84,7 +84,7 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
                   {{ showLikesOnly() ? 'Show All' : 'My Likes' }}
                 </button>
               }
-              <button (click)="logout()" class="text-white text-sm hover:underline px-2 border-l border-white/30 text-red-200">Logout</button>
+              <button (click)="logout()" class="text-sm hover:underline px-2 border-l border-white/30 text-red-200">Logout</button>
             }
           </div>
 
