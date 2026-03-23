@@ -1,11 +1,18 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+import os, sys
+PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
+if PROJECT_ROOT not in sys.path:
+    sys.path.append(PROJECT_ROOT)
+
+
+from fastapi import FastAPI, Depends, HTTPException, status, APIRouter, Body
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from pydantic import BaseModel
 #import moduli per gestire id recensioni e date
 from datetime import datetime
 import uuid
 
-import models, schemas, json, database
+import models, schemas, json, database, os
 from database import engine, get_db
 from fastapi.middleware.cors import CORSMiddleware
 #crea le tabelle nel db
@@ -237,3 +244,16 @@ def save_ai_summary(hotel_id: str, payload: dict, db: Session = Depends(get_db))
   db.commit()
   
   return {"status": "success"}
+
+
+
+#blocco di avvio file senza stringa di comando
+if __name__ == "__main__":
+  import uvicorn
+
+  uvicorn.run(
+    "main:app",
+    host="127.0.0.1",
+    port=8000,
+    reload=True,
+  )
