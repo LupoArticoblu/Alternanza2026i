@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 #import moduli per gestire id recensioni e date
 from datetime import datetime
 import uuid
@@ -53,13 +53,14 @@ def read_root():
 #END POINT UTENTI
 @app.post("/login")
 def login(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
-  #controllo mail e password
+  # Controllo email e password
   user = db.query(models.User).filter(models.User.id == user_data.email).first()
-  #in caso di mancanza o errore password
-  if not user or user.password != user_data.password:
+  # In caso di mancanza o password errata
+  # il confronto su un modello SQLAlchemy può generare ColumnElement, ignoro il warning
+  if user is None or user.password != user_data.password:  # type: ignore[operator]
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
   
-  return {"message": "Login successful", "role": user.role} 
+  return {"message": "Login successful", "role": user.role}
 
 #REGISTRA UTENTI
 @app.post("/register")
@@ -82,7 +83,7 @@ def register(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
 
 #END POINT HOTEL
 @app.get("/hotels", response_model=List[schemas.Hotel])
-def get_hotels(user_id: str = None, db: Session = Depends(get_db)):
+def get_hotels(user_id: Optional[str] = None, db: Session = Depends(get_db)):
   hotels = db.query(models.Hotel).all()
   result = []
   for hotel in hotels:
@@ -97,10 +98,13 @@ def get_hotels(user_id: str = None, db: Session = Depends(get_db)):
     hotel_dict['isLiked'] = liked
     
     # Decodifichiamo l'ai_summary in modo che FastApi lo converta nell'oggetto corretto
-    if hotel.ai_summary:
+    # Decodifichiamo l'AI summary solo se presente (campo nullable)
+    # Gestione sicura del campo nullable "ai_summary"
+    summary_val = hotel.ai_summary  # type: ignore[assignment]
+    if summary_val is not None:
       try:
-        hotel_dict['aiAnalysis'] = json.loads(hotel.ai_summary)
-      except:
+        hotel_dict['aiAnalysis'] = json.loads(summary_val)  # type: ignore[arg-type]
+      except Exception:
         hotel_dict['aiAnalysis'] = None
     else:
       hotel_dict['aiAnalysis'] = None
@@ -165,7 +169,7 @@ def add_review(hotel_id:str, review:schemas.ReviewCreate, user_id:str, db:Sessio
 
   #limitiamo le recensioni agli utenti guest
   user = db.query(models.User).filter(models.User.id == user_id).first()
-  if not user or user.role == "host":
+  if user is None or user.role == "host":  # type: ignore[operator]
     raise HTTPException(status_code=403, detail="Only guests can review hotels")
 
   #creazione recensione
@@ -183,7 +187,8 @@ def add_review(hotel_id:str, review:schemas.ReviewCreate, user_id:str, db:Sessio
   # Quando viene aggiunta una nuova recensione, le informazioni cambiano. 
   # Invalidiamo (resettiamo) il summary esistente, cosí il prossimo utente 
   # che visiterà la pagina dovrà generarne uno nuovo aggiornato.
-  db_hotel.ai_summary = None 
+  # Reset AI summary (nullable column)
+  db_hotel.ai_summary = None  # type: ignore[assignment]
   db.add(new_review)
   db.commit()
   db.refresh(new_review)
@@ -194,21 +199,23 @@ def add_review(hotel_id:str, review:schemas.ReviewCreate, user_id:str, db:Sessio
 def like_hotel(hotel_id:str, user_id:str, db:Session = Depends(get_db)):
   #limitiamo i like agli utenti
   user = db.query(models.User).filter(models.User.id == user_id).first()
-  if not user or user.role == "host":
-    raise HTTPException(status_code=403, detail="Only guests can like hotels")
+  if user is None or user.role == "host":  # type: ignore[operator]
+    raise HTTPException(status_code=403, detail="Only guests" )
 
   #se il like è già stato inserito dall' utente non deve essere inserito di nuovo
   existing_like = db.query(models.Like).filter(models.Like.hotel_id == hotel_id, models.Like.user_id == user_id).first()
 
   db_hotel = db.query(models.Hotel).filter(models.Hotel.id == hotel_id).first()
-  #logica toggle per i like
+  if db_hotel is None:
+    raise HTTPException(status_code=404, detail="Hotel not found")
+  # Logica toggle per i like
   if existing_like:
     db.delete(existing_like)
-    db_hotel.likes -= 1
+    db_hotel.likes = db_hotel.likes - 1  # type: ignore[assignment]
   else:
-    new_like = models.Like( hotel_id = hotel_id, user_id = user_id)
+    new_like = models.Like(hotel_id=hotel_id, user_id=user_id)
     db.add(new_like)
-    db_hotel.likes += 1
+    db_hotel.likes = db_hotel.likes + 1  # type: ignore[assignment]
 
 
 
@@ -225,7 +232,8 @@ def save_ai_summary(hotel_id: str, payload: dict, db: Session = Depends(get_db))
     raise HTTPException(status_code=404, detail="Hotel not found")
   
   # Salviamo il JSON stringificato nel campo testuale del database.
-  db_hotel.ai_summary = json.dumps(payload)
+  # Salviamo il JSON stringificato nel campo testuale del database.
+  db_hotel.ai_summary = json.dumps(payload)  # type: ignore[assignment]
   db.commit()
   
   return {"status": "success"}

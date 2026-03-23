@@ -2,6 +2,8 @@ fastapi
 uvicorn
 sqlalchemy
 pydantic
+transformers
+torch
 passlib[bcrypt]
 python-jose[cryptography]
 python-multipart
