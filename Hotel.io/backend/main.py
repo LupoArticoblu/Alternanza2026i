@@ -245,8 +245,80 @@ def save_ai_summary(hotel_id: str, payload: dict, db: Session = Depends(get_db))
   
   return {"status": "success"}
 
+#chatbot
+router = APIRouter()
 
+class ChatMessage(BaseModel):
+  user_message: str
 
+_FAQ_ = os.path.join(os.path.dirname(__file__), "faqs.json")
+_faqs = None
+
+def load_faqs():
+  global _faqs
+  if _faqs is None:
+    with open(_FAQ_, "r", encoding="utf-8") as f:
+      _faqs = json.load(f)
+  return _faqs
+
+def find_faq_answer(message: str) -> str | None:
+  
+  for entry in load_faqs():
+    if entry["question"].lower() in message.lower():
+      return entry["answer"]
+  return None
+
+from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
+
+LOC = "EleutherAI/gpt-neo-125M"
+
+print("Loading chatbot model...")
+
+_tokenizer = AutoTokenizer.from_pretrained(LOC)
+_model = AutoModelForCausalLM.from_pretrained(LOC)
+
+_generator = pipeline(
+    "text-generation",
+    model=_model,
+    tokenizer=_tokenizer,
+    max_new_tokens=100,
+    do_sample=True,
+    temperature=0.7,
+)
+
+print("Chatbot model loaded")
+
+# Endpoint per il chatbot
+class ChatRequest(BaseModel):
+  message: str
+  temperature: Optional[float] = None
+  max_new_tokens: Optional[int] = None
+
+@app.post("/chatbot")
+def chatnot_endpoint(req: ChatRequest, db: Session = Depends(get_db)):
+  """"Endpoint per il chatbot. Riceve un messaggio, controlla se corrisponde a una FAQ, altrimenti genera una risposta con il modello di linguaggio."""
+
+  faq_answer = None
+
+  if faq_answer:
+    return {"answer": faq_answer, "source": "faq"}
+
+  generation_kwargs = {}
+  if req.temperature is not None:
+    generation_kwargs["temperature"] = req.temperature
+  if req.max_new_tokens is not None:
+    generation_kwargs["max_new_tokens"] = req.max_new_tokens
+
+  #prompt
+  prompt = f"You are a helpful assistant for a hotel booking website. Answer the user's question as best as you can.\nUser: {req.message}\nAssistant:"
+
+  #genera risposta
+  generated = _generator(prompt, **generation_kwargs)
+
+  #restituisce solo la parte di testo generata, senza il prompt
+  answer_txt = generated[0]["generated_text"][len(prompt):].strip()
+
+  return {"answer": answer_txt, "source": "local-llm"}
 #blocco di avvio file senza stringa di comando
 if __name__ == "__main__":
   import uvicorn
