@@ -13,7 +13,6 @@ import { ChatService } from '../services/chat.service';
   selector: 'app-chatbot',
   standalone: true,
   imports: [CommonModule, FormsModule, HttpClientModule],
-  providers: [ChatService],
   template: `
     <div style="display: flex; flex-direction: column; height: 100%; max-width: 600px; margin: 0 auto; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; background: #fafafa;">
        <div *ngFor="let msg of messages"
@@ -41,11 +40,19 @@ export class ChatbotComponent {
   send() {
     if (!this.userInput.trim()) return;
     const query = this.userInput;
+    // Show user's message immediately
     this.messages.push({ text: query, fromUser: true });
-    this.chatService.sendMessage({ message: query }).subscribe({
-      next: (response) => this.messages.push({ text: response.answer, fromUser: false }),
+
+    // Build the request object expected by ChatService
+    const request = { message: query } as any; // ChatRequest interface
+    this.chatService.sendMessage(request).subscribe({
+      next: (resp) => {
+        // resp is of type ChatResponse { answer: string; source: ... }
+        this.messages.push({ text: resp.answer, fromUser: false });
+      },
       error: (err) => console.error('Chat error', err)
     });
+
     this.userInput = '';
   }
 }

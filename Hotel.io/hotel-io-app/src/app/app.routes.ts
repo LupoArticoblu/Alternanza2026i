@@ -9,7 +9,6 @@ export const routes: Routes = [
 	{
 		path: 'chat',
 		component: ChatbotComponent,
-		// Since ChatbotComponent is standalone, we need to list its imports here
-		// (Angular will automatically include the component's own imports)
+		
 	}
 ];

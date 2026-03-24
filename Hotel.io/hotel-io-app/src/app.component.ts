@@ -5,13 +5,14 @@ import { Hotel, HotelService } from './services/hotel.service';
 import { HotelDetailComponent } from './components/hotel-detail.component';
 import { LoginUserComponent } from './components/login-user.component';
 import { LoginHostComponent } from './components/login-host.component';
+import { ChatbotComponent } from './components/chatbot.component';
 
 type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, HotelDetailComponent, LoginUserComponent, LoginHostComponent],
+  imports: [CommonModule, FormsModule, HotelDetailComponent, LoginUserComponent, LoginHostComponent, ChatbotComponent],
   template: `
     <div class="min-h-screen flex flex-col">
       <!-- Navbar -->
@@ -67,6 +68,10 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
             @if (!currentUser()) {
               <button (click)="setView('login-user')" class="text-white text-sm hover:underline px-2">User</button>
               <button (click)="setView('login-host')" class="text-white text-sm hover:underline px-2 border-l border-white/30">Host</button>
+              <!-- Toggle chatbot button for unauthenticated users -->
+              <button (click)="toggleChat()" class="bg-white text-black text-sm hover:underline px-2 py-1 border-l border-white/30 rounded ml-2">
+                {{ showChat() ? 'Nascondi' : 'Mostra' }} Chat
+              </button>
             } @else {
               <div class="flex items-center gap-1.5 px-2 border-r border-white/20 mr-1">
                 <span class="text-xs text-blue-200 hidden md:inline">{{currentUser()?.email}}</span>
@@ -85,6 +90,10 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
                 </button>
               }
               <button (click)="logout()" class="text-sm hover:underline px-2 border-l border-white/30 text-red-200">Logout</button>
+              <!-- Toggle chatbot button for authenticated users -->
+              <button (click)="toggleChat()" class="bg-white text-black text-sm hover:underline px-2 py-1 border-l border-white/30 rounded ml-2">
+                {{ showChat() ? 'Nascondi' : 'Mostra' }} Chat
+              </button>
             }
           </div>
 
@@ -194,6 +203,11 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
         }
       </main>
 
+      <!-- Chatbot side panel -->
+      <div *ngIf="showChat()" class="chat-panel fixed right-0 bottom-0 h-[33vh] w-80 bg-white shadow-lg border-t border-l z-50">
+        <app-chatbot></app-chatbot>
+      </div>
+
       <footer class="bg-gray-100 border-t border-gray-200 mt-12 py-8 text-center text-gray-500 text-sm">
         <p>&copy; 2026 Hotel.io. Powered by Exprivia.</p>
       </footer>
@@ -215,6 +229,9 @@ export class AppComponent {
   currentView = signal<ViewMode>('list');
   selectedHotelId = signal<string | null>(null);
   showLikesOnly = signal(false);
+
+  // Signal to control chatbot visibility (default hidden)
+  public readonly showChat = signal(false);
 
   // Filtri di ricerca
   searchQuery = signal('');
@@ -284,6 +301,10 @@ export class AppComponent {
     this.searchQuery.set('');
     this.maxPrice.set(null);
     this.maxDistance.set(null);
+  }
+
+  toggleChat() {
+    this.showChat.set(!this.showChat());
   }
 
   toggleLike(id: string) {
