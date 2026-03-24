@@ -281,9 +281,11 @@ _generator = pipeline(
     "text-generation",
     model=_model,
     tokenizer=_tokenizer,
-    max_new_tokens=100,
+    max_new_tokens=150,          # più spazio per risposte complete
     do_sample=True,
     temperature=0.7,
+    return_full_text=False,      # restituisce solo la parte generata, non il prompt
+    eos_token_id=_tokenizer.eos_token_id,  # termina la generazione al token di fine testo
 )
 
 print("Chatbot model loaded")
@@ -310,13 +312,18 @@ def chatnot_endpoint(req: ChatRequest, db: Session = Depends(get_db)):
     generation_kwargs["max_new_tokens"] = req.max_new_tokens
 
   #prompt
-  prompt = f"You are a helpful assistant for a hotel booking website. Answer the user's question as best as you can.\nUser: {req.message}\nAssistant:"
+  prompt = (
+      "You are a concise, helpful assistant for a hotel booking website. "
+      "Answer the user's question in at most two short sentences.\n"
+      f"User: {req.message}\n"
+      "Assistant:"
+    )
 
   #genera risposta
   generated = _generator(prompt, **generation_kwargs)
 
   #restituisce solo la parte di testo generata, senza il prompt
-  answer_txt = generated[0]["generated_text"][len(prompt):].strip()
+  answer_txt = generated[0]["generated_text"].strip()  # rimuove spazi bianchi iniziali e finali
 
   return {"answer": answer_txt, "source": "local-llm"}
 #blocco di avvio file senza stringa di comando

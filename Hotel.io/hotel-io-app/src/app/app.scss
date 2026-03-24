@@ -1,0 +1,14 @@
+/* Styles for the chatbot side panel */
+.chat-panel {
+	position: fixed;
+	top: 0;
+	right: 0;
+	width: 350px;
+	height: 100vh;
+	background: #fafafa;
+	border-left: 1px solid #ddd;
+	box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+	padding: 1rem;
+	overflow-y: auto;
+	z-index: 1000;
+}

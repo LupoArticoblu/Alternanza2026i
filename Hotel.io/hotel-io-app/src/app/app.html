@@ -14,6 +14,10 @@
           <a href="#" class="text-sm font-medium hover:text-blue-200 transition-colors">Car Rentals</a>
           <a href="#" class="text-sm font-medium hover:text-blue-200 transition-colors">Attractions</a>
         </nav>
+          <!-- Toggle button for the chatbot side panel -->
+          <button (click)="toggleChat()" class="ml-4 px-3 py-1 bg-white text-blue-600 rounded hover:bg-gray-100 transition-colors">
+            Chat
+          </button>
       </div>
     </div>
   </header>
@@ -40,4 +44,9 @@
       <p>&copy; 2026 Hotel.io. All rights reserved.</p>
     </div>
   </footer>
+</div>
+
+<!-- Chatbot side panel (appears on the right) -->
+<div *ngIf="showChat()" class="chat-panel">
+  <app-chatbot></app-chatbot>
 </div>
