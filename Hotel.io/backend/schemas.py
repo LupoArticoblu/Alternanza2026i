@@ -26,6 +26,21 @@ class HotelBase(BaseModel):
 class HotelCreate(HotelBase):
   pass
 
+
+# ---------------------------------------------------------------------------
+# Chat models – used by the simple /chat endpoint that the Angular frontend
+# calls. They are deliberately minimal: the request contains the user message
+# and optional generation parameters; the response returns the answer and a
+# source identifier ("local-llm" or "faq").
+# ---------------------------------------------------------------------------
+class ChatRequest(BaseModel):
+    message: str
+    temperature: Optional[float] = None
+    max_new_tokens: Optional[int] = None
+
+class ChatResponse(BaseModel):
+    answer: str
+    source: str
 class ReviewCreate(BaseModel): #prendiamo l'id utente dal login
    comment: str
    rating: float

@@ -40,22 +40,79 @@ app = FastAPI(title="Hotel.io API")
 
 # Configurazione CORS per permettere chiamate da Angular (solitamente porta 4200)
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://hotel.io:3000",
-        "http://www.hotel.io:3000",
-        "http://hotel.local:3000"
-    ],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+  CORSMiddleware,
+  allow_origins=[
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://hotel.io:3000",
+    "http://www.hotel.io:3000",
+    "http://hotel.local:3000",
+    # Angular development server (default port 4200)
+    "http://localhost:4200",
+    "http://127.0.0.1:4200",
+  ],
+  allow_credentials=True,
+  allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allow_headers=["*"],
 )
 
 @app.get("/")
 def read_root():
     return {"status": "ok", "message": "Hotel.io API is running"}
+
+  # Simple chat endpoint used by the Angular frontend
+# ---------------------------------------------------------------------------
+# Simple chat endpoints
+# ---------------------------------------------------------------------------
+# GET version – useful for quick browser checks (e.g. opening
+# http://localhost:8000/chat in a browser). It returns a static JSON so the
+# page does not stay in a loading state.
+@app.get("/chat")
+def chat_get():
+  return {"message": "Chat endpoint is alive. Use POST with JSON payload."}
+
+# POST version – used by the Angular frontend. It receives a ChatRequest and
+# returns a ChatResponse.
+@app.post("/chat")
+def chat_endpoint(request: schemas.ChatRequest):
+  """Returns a helpful answer using FAQs or the local LLM pipeline.
+  Falls back to a friendly message on errors.
+  """
+  # check FAQs first
+  faq_answer = find_faq_answer(request.message)
+  if faq_answer:
+    return schemas.ChatResponse(answer=faq_answer, source="faq")
+
+  # prepare generation kwargs from optional params
+  generation_kwargs = {}
+  if request.temperature is not None:
+    generation_kwargs["temperature"] = request.temperature
+  if request.max_new_tokens is not None:
+    generation_kwargs["max_new_tokens"] = request.max_new_tokens
+
+  # build a travel-assistant prompt
+  prompt = (
+      "You are a friendly, concise travel assistant for a hotel booking website. "
+      "Answer the user's question clearly and helpfully in 1-3 sentences. "
+      "If the user asks for booking steps, prices or availability, give practical next steps.\n"
+      f"User: {request.message}\n"
+      "Assistant:"
+    )
+
+  try:
+    generated = _generator(prompt, **generation_kwargs)
+    answer_txt = generated[0].get("generated_text", "").strip()
+    if not answer_txt:
+      raise ValueError("empty generation")
+    return schemas.ChatResponse(answer=answer_txt, source="local-llm")
+  except Exception as e:
+    # Log minimal info to console and return a helpful fallback
+    print("Chat generation error:", str(e))
+    fallback = (
+      "Mi dispiace, al momento non riesco a generare una risposta completa. "
+      "Posso però aiutarti con informazioni sulle strutture, prezzi indicativi o consigli di viaggio: dimmi cosa vuoi sapere."
+    )
+    return schemas.ChatResponse(answer=fallback, source="fallback")
 
 #END POINT UTENTI
 @app.post("/login")

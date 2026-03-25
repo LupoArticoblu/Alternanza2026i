@@ -70,7 +70,7 @@ type ViewMode = 'list' | 'create' | 'detail' | 'login-user' | 'login-host';
               <button (click)="setView('login-host')" class="text-white text-sm hover:underline px-2 border-l border-white/30">Host</button>
               <!-- Toggle chatbot button for unauthenticated users -->
               <button (click)="toggleChat()" class="bg-white text-black text-sm hover:underline px-2 py-1 border-l border-white/30 rounded ml-2">
-                {{ showChat() ? 'Nascondi' : 'Mostra' }} Chat
+                {{ showChat() ? 'Nascondi' : 'Mostra' }} Hotello
               </button>
             } @else {
               <div class="flex items-center gap-1.5 px-2 border-r border-white/20 mr-1">
