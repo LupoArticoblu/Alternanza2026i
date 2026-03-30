@@ -1,395 +1,374 @@
 import os, sys
+
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
-
-from fastapi import FastAPI, Depends, HTTPException, status, APIRouter, Body
+from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from pydantic import BaseModel
-#import moduli per gestire id recensioni e date
 from datetime import datetime
 import uuid
+import json
 
-import models, schemas, json, database, os
+import models, schemas, database
 from database import engine, get_db
 from fastapi.middleware.cors import CORSMiddleware
-#crea le tabelle nel db
+from pydantic import BaseModel
+
+load_dotenv = __import__("dotenv", fromlist=["load_dotenv"]).load_dotenv
+load_dotenv()
+
 models.Base.metadata.create_all(bind=engine)
 
-# Migrazione al volo: aggiungi colonna images se non esiste
 from sqlalchemy import text
+
+
 def run_migrations():
     with engine.connect() as conn:
         try:
             conn.execute(text("ALTER TABLE hotels ADD COLUMN images TEXT DEFAULT '[]'"))
             conn.commit()
         except Exception:
-            pass  # colonna già esistente
-        
+            pass
         try:
             conn.execute(text("ALTER TABLE hotels ADD COLUMN distanceFromCenter FLOAT"))
             conn.commit()
         except Exception:
-            pass  # colonna già esistente
+            pass
+
 
 run_migrations()
 
 app = FastAPI(title="Hotel.io API")
 
-# Configurazione CORS per permettere chiamate da Angular (solitamente porta 4200)
 app.add_middleware(
-  CORSMiddleware,
-  allow_origins=[
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://hotel.io:3000",
-    "http://www.hotel.io:3000",
-    "http://hotel.local:3000",
-    # Angular development server (default port 4200)
-    "http://localhost:4200",
-    "http://127.0.0.1:4200",
-  ],
-  allow_credentials=True,
-  allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allow_headers=["*"],
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
 
 @app.get("/")
 def read_root():
     return {"status": "ok", "message": "Hotel.io API is running"}
 
-  # Simple chat endpoint used by the Angular frontend
-# ---------------------------------------------------------------------------
-# Simple chat endpoints
-# ---------------------------------------------------------------------------
-# GET version – useful for quick browser checks (e.g. opening
-# http://localhost:8000/chat in a browser). It returns a static JSON so the
-# page does not stay in a loading state.
-@app.get("/chat")
-def chat_get():
-  return {"message": "Chat endpoint is alive. Use POST with JSON payload."}
 
-# POST version – used by the Angular frontend. It receives a ChatRequest and
-# returns a ChatResponse.
-@app.post("/chat")
-def chat_endpoint(request: schemas.ChatRequest):
-  """Returns a helpful answer using FAQs or the local LLM pipeline.
-  Falls back to a friendly message on errors.
-  """
-  # check FAQs first
-  faq_answer = find_faq_answer(request.message)
-  if faq_answer:
-    return schemas.ChatResponse(answer=faq_answer, source="faq")
-
-  # prepare generation kwargs from optional params
-  generation_kwargs = {}
-  if request.temperature is not None:
-    generation_kwargs["temperature"] = request.temperature
-  if request.max_new_tokens is not None:
-    generation_kwargs["max_new_tokens"] = request.max_new_tokens
-
-  # build a travel-assistant prompt
-  prompt = (
-      "You are a friendly, concise travel assistant for a hotel booking website. "
-      "Answer the user's question clearly and helpfully in 1-3 sentences. "
-      "If the user asks for booking steps, prices or availability, give practical next steps.\n"
-      f"User: {request.message}\n"
-      "Assistant:"
-    )
-
-  try:
-    generated = _generator(prompt, **generation_kwargs)
-    answer_txt = generated[0].get("generated_text", "").strip()
-    if not answer_txt:
-      raise ValueError("empty generation")
-    return schemas.ChatResponse(answer=answer_txt, source="local-llm")
-  except Exception as e:
-    # Log minimal info to console and return a helpful fallback
-    print("Chat generation error:", str(e))
-    fallback = (
-      "Mi dispiace, al momento non riesco a generare una risposta completa. "
-      "Posso però aiutarti con informazioni sulle strutture, prezzi indicativi o consigli di viaggio: dimmi cosa vuoi sapere."
-    )
-    return schemas.ChatResponse(answer=fallback, source="fallback")
-
-#END POINT UTENTI
+# ==================== USER ENDPOINTS ====================
 @app.post("/login")
 def login(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
-  # Controllo email e password
-  user = db.query(models.User).filter(models.User.id == user_data.email).first()
-  # In caso di mancanza o password errata
-  # il confronto su un modello SQLAlchemy può generare ColumnElement, ignoro il warning
-  if user is None or user.password != user_data.password:  # type: ignore[operator]
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-  
-  return {"message": "Login successful", "role": user.role}
+    user = db.query(models.User).filter(models.User.id == user_data.email).first()
+    if user is None or user.password != user_data.password:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
+        )
+    return {"message": "Login successful", "role": user.role}
 
-#REGISTRA UTENTI
+
 @app.post("/register")
 def register(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
-  #controllo se l'utente esiste
-  user = db.query(models.User).filter(models.User.id == user_data.email).first()
-  if user:
-    raise HTTPException(status_code=400, detail="User already exists")
-  
-  #creazione nuovo utente
-  new_user = models.User(
-    id=user_data.email,
-    password=user_data.password,
-    role=user_data.role
-  )
-  db.add(new_user)
-  db.commit()
-  db.refresh(new_user)
-  return {"message": "User registered successfully", "role": new_user.role}
+    user = db.query(models.User).filter(models.User.id == user_data.email).first()
+    if user:
+        raise HTTPException(status_code=400, detail="User already exists")
+    new_user = models.User(
+        id=user_data.email, password=user_data.password, role=user_data.role
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return {"message": "User registered successfully", "role": new_user.role}
 
-#END POINT HOTEL
+
+# ==================== HOTEL ENDPOINTS ====================
 @app.get("/hotels", response_model=List[schemas.Hotel])
 def get_hotels(user_id: Optional[str] = None, db: Session = Depends(get_db)):
-  hotels = db.query(models.Hotel).all()
-  result = []
-  for hotel in hotels:
-    liked = False
-    if user_id:
-      liked = db.query(models.Like).filter(
-        models.Like.hotel_id == hotel.id,
-        models.Like.user_id == user_id
-      ).first() is not None
-    hotel_dict = {c.name: getattr(hotel, c.name) for c in hotel.__table__.columns}
-    hotel_dict['reviews'] = hotel.reviews
-    hotel_dict['isLiked'] = liked
-    
-    # Decodifichiamo l'ai_summary in modo che FastApi lo converta nell'oggetto corretto
-    # Decodifichiamo l'AI summary solo se presente (campo nullable)
-    # Gestione sicura del campo nullable "ai_summary"
-    summary_val = hotel.ai_summary  # type: ignore[assignment]
-    if summary_val is not None:
-      try:
-        hotel_dict['aiAnalysis'] = json.loads(summary_val)  # type: ignore[arg-type]
-      except Exception:
-        hotel_dict['aiAnalysis'] = None
-    else:
-      hotel_dict['aiAnalysis'] = None
+    hotels = db.query(models.Hotel).all()
+    result = []
+    for hotel in hotels:
+        liked = False
+        if user_id:
+            liked = (
+                db.query(models.Like)
+                .filter(
+                    models.Like.hotel_id == hotel.id, models.Like.user_id == user_id
+                )
+                .first()
+                is not None
+            )
+        hotel_dict = {c.name: getattr(hotel, c.name) for c in hotel.__table__.columns}
+        hotel_dict["reviews"] = hotel.reviews
+        hotel_dict["isLiked"] = liked
 
-    result.append(schemas.Hotel.model_validate(hotel_dict))
-  return result
+        summary_val = hotel.ai_summary
+        if summary_val is not None:
+            try:
+                hotel_dict["aiAnalysis"] = json.loads(summary_val)
+            except Exception:
+                hotel_dict["aiAnalysis"] = None
+        else:
+            hotel_dict["aiAnalysis"] = None
+
+        result.append(schemas.Hotel.model_validate(hotel_dict))
+    return result
+
 
 @app.post("/hotels", response_model=schemas.Hotel)
-def create_hotel(hotel:schemas.HotelCreate, owner_id:str, db:Session = Depends(get_db)):
-  #generiamo l'id composto
-  hotel_id = models.Hotel.generate_id(hotel.name, hotel.location)
+def create_hotel(
+    hotel: schemas.HotelCreate, owner_id: str, db: Session = Depends(get_db)
+):
+    hotel_id = models.Hotel.generate_id(hotel.name, hotel.location)
+    db_hotel = db.query(models.Hotel).filter(models.Hotel.id == hotel_id).first()
+    if db_hotel:
+        raise HTTPException(status_code=400, detail="This hotel already exists")
+    new_hotel = models.Hotel(id=hotel_id, owner_id=owner_id, **hotel.dict())
+    db.add(new_hotel)
+    db.commit()
+    db.refresh(new_hotel)
+    return new_hotel
 
-  #controlliamo l'esistenza
-  db_hotel = db.query(models.Hotel).filter(models.Hotel.id == hotel_id).first()
-  if db_hotel:
-    raise HTTPException(status_code=400, detail= "This hotel already exist")
 
-  #dati per l'hotel se inseribile
-  new_hotel = models.Hotel(
-    id=hotel_id,
-    owner_id=owner_id,
-    **hotel.dict()
-  )
-  db.add(new_hotel)
-  db.commit()
-  db.refresh(new_hotel)
-  return new_hotel
+@app.put("/hotels/{hotel_id}", response_model=schemas.Hotel)
+def update_hotel(
+    hotel_id: str, hotel_update: schemas.HotelCreate, db: Session = Depends(get_db)
+):
+    db_hotel = db.query(models.Hotel).filter(models.Hotel.id == hotel_id).first()
+    if not db_hotel:
+        raise HTTPException(status_code=404, detail="Hotel not found")
+    update_data = hotel_update.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_hotel, key, value)
+    db.commit()
+    db.refresh(db_hotel)
+    return db_hotel
 
-@app.put("/hotels/{hotel_id}", response_model=schemas.Hotel) #aggiorna hotel
-def update_hotel(hotel_id:str, hotel_update:schemas.HotelCreate, db:Session = Depends(get_db)):
-  #trova hotel
-  db_hotel = db.query(models.Hotel).filter(models.Hotel.id == hotel_id).first()
-  if not db_hotel:
-    raise HTTPException(status_code=404, detail="Hotel not found")
-  
-  #aggiorna i campi
-  update_data = hotel_update.dict(exclude_unset=True)
-  for key, value in update_data.items():
-    setattr(db_hotel, key, value)
-  
-  db.commit()
-  db.refresh(db_hotel)
-  return db_hotel
 
-#elimina hotel
 @app.delete("/hotels/{hotel_id}", response_model=schemas.Hotel)
-def delete_hotel(hotel_id:str, db:Session = Depends(get_db)):
-  db_hotel = db.query(models.Hotel).filter(models.Hotel.id == hotel_id).first()
-  if not db_hotel:
-    raise HTTPException(status_code=404, detail="Hotel not found")
-  db.delete(db_hotel)
-  db.commit()
-  return db_hotel
+def delete_hotel(hotel_id: str, db: Session = Depends(get_db)):
+    db_hotel = db.query(models.Hotel).filter(models.Hotel.id == hotel_id).first()
+    if not db_hotel:
+        raise HTTPException(status_code=404, detail="Hotel not found")
+    db.delete(db_hotel)
+    db.commit()
+    return db_hotel
 
-#ENDPOINT RECENSIONI e LIKES
+
+# ==================== REVIEW & LIKE ENDPOINTS ====================
 @app.post("/hotels/{hotel_id}/reviews", response_model=schemas.Review)
-def add_review(hotel_id:str, review:schemas.ReviewCreate, user_id:str, db:Session = Depends(get_db)):
-  #verifica esistenza hotel
-  db_hotel = db.query(models.Hotel).filter(models.Hotel.id == hotel_id).first()
-  if not db_hotel:
-    raise HTTPException(status_code=404, detail="Hotel not found")
+def add_review(
+    hotel_id: str,
+    review: schemas.ReviewCreate,
+    user_id: str,
+    db: Session = Depends(get_db),
+):
+    db_hotel = db.query(models.Hotel).filter(models.Hotel.id == hotel_id).first()
+    if not db_hotel:
+        raise HTTPException(status_code=404, detail="Hotel not found")
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user is None or user.role == "host":
+        raise HTTPException(status_code=403, detail="Only guests can review hotels")
 
-  #limitiamo le recensioni agli utenti guest
-  user = db.query(models.User).filter(models.User.id == user_id).first()
-  if user is None or user.role == "host":  # type: ignore[operator]
-    raise HTTPException(status_code=403, detail="Only guests can review hotels")
+    new_review = models.Review(
+        id=str(uuid.uuid4()),
+        hotel_id=hotel_id,
+        user=user_id,
+        **review.dict(),
+        date=datetime.now().strftime("%Y-%m-%d"),
+    )
+    db_hotel.ai_summary = None
+    db.add(new_review)
+    db.commit()
+    db.refresh(new_review)
+    return new_review
 
-  #creazione recensione
-  new_review = models.Review(
-    id=str(uuid.uuid4()), # uuid è il modulo per generare id casuali
-    hotel_id=hotel_id,
-    user=user_id,
-    # comment=review.comment,
-    # rating=review.rating, vengono sostituiti da **review.dict()
-    **review.dict(), #spacchettamento del review come dizionario
-    date=datetime.now().strftime("%Y-%m-%d")
-  )
 
-  # SETTA IL SUMMARY AI A NULLO:
-  # Quando viene aggiunta una nuova recensione, le informazioni cambiano. 
-  # Invalidiamo (resettiamo) il summary esistente, cosí il prossimo utente 
-  # che visiterà la pagina dovrà generarne uno nuovo aggiornato.
-  # Reset AI summary (nullable column)
-  db_hotel.ai_summary = None  # type: ignore[assignment]
-  db.add(new_review)
-  db.commit()
-  db.refresh(new_review)
-  return new_review
-
-#likes
 @app.post("/hotels/{hotel_id}/like")
-def like_hotel(hotel_id:str, user_id:str, db:Session = Depends(get_db)):
-  #limitiamo i like agli utenti
-  user = db.query(models.User).filter(models.User.id == user_id).first()
-  if user is None or user.role == "host":  # type: ignore[operator]
-    raise HTTPException(status_code=403, detail="Only guests" )
+def like_hotel(hotel_id: str, user_id: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user is None or user.role == "host":
+        raise HTTPException(status_code=403, detail="Only guests can like hotels")
 
-  #se il like è già stato inserito dall' utente non deve essere inserito di nuovo
-  existing_like = db.query(models.Like).filter(models.Like.hotel_id == hotel_id, models.Like.user_id == user_id).first()
-
-  db_hotel = db.query(models.Hotel).filter(models.Hotel.id == hotel_id).first()
-  if db_hotel is None:
-    raise HTTPException(status_code=404, detail="Hotel not found")
-  # Logica toggle per i like
-  if existing_like:
-    db.delete(existing_like)
-    db_hotel.likes = db_hotel.likes - 1  # type: ignore[assignment]
-  else:
-    new_like = models.Like(hotel_id=hotel_id, user_id=user_id)
-    db.add(new_like)
-    db_hotel.likes = db_hotel.likes + 1  # type: ignore[assignment]
-
-
-
-  db.commit()
-  return {"total_likes": db_hotel.likes}
-
-# Endpoint per ricevere e salvare nel DB il sommario AI generato dal frontend.
-# In questo modo il calcolo pesante di Ollama viene fatto una volta sola,
-# e tutti gli utenti successivi leggeranno subito il risultato.
-@app.post("/hotels/{hotel_id}/ai_summary")
-def save_ai_summary(hotel_id: str, payload: dict, db: Session = Depends(get_db)):
-  db_hotel = db.query(models.Hotel).filter(models.Hotel.id == hotel_id).first()
-  if not db_hotel:
-    raise HTTPException(status_code=404, detail="Hotel not found")
-  
-  # Salviamo il JSON stringificato nel campo testuale del database.
-  # Salviamo il JSON stringificato nel campo testuale del database.
-  db_hotel.ai_summary = json.dumps(payload)  # type: ignore[assignment]
-  db.commit()
-  
-  return {"status": "success"}
-
-#chatbot
-router = APIRouter()
-
-class ChatMessage(BaseModel):
-  user_message: str
-
-_FAQ_ = os.path.join(os.path.dirname(__file__), "faqs.json")
-_faqs = None
-
-def load_faqs():
-  global _faqs
-  if _faqs is None:
-    with open(_FAQ_, "r", encoding="utf-8") as f:
-      _faqs = json.load(f)
-  return _faqs
-
-def find_faq_answer(message: str) -> str | None:
-  
-  for entry in load_faqs():
-    if entry["question"].lower() in message.lower():
-      return entry["answer"]
-  return None
-
-from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
-
-LOC = "EleutherAI/gpt-neo-125M"
-
-print("Loading chatbot model...")
-
-_tokenizer = AutoTokenizer.from_pretrained(LOC)
-_model = AutoModelForCausalLM.from_pretrained(LOC)
-
-_generator = pipeline(
-    "text-generation",
-    model=_model,
-    tokenizer=_tokenizer,
-    max_new_tokens=150,          # più spazio per risposte complete
-    do_sample=True,
-    temperature=0.7,
-    return_full_text=False,      # restituisce solo la parte generata, non il prompt
-    eos_token_id=_tokenizer.eos_token_id,  # termina la generazione al token di fine testo
-)
-
-print("Chatbot model loaded")
-
-# Endpoint per il chatbot
-class ChatRequest(BaseModel):
-  message: str
-  temperature: Optional[float] = None
-  max_new_tokens: Optional[int] = None
-
-@app.post("/chatbot")
-def chatnot_endpoint(req: ChatRequest, db: Session = Depends(get_db)):
-  """"Endpoint per il chatbot. Riceve un messaggio, controlla se corrisponde a una FAQ, altrimenti genera una risposta con il modello di linguaggio."""
-
-  faq_answer = None
-
-  if faq_answer:
-    return {"answer": faq_answer, "source": "faq"}
-
-  generation_kwargs = {}
-  if req.temperature is not None:
-    generation_kwargs["temperature"] = req.temperature
-  if req.max_new_tokens is not None:
-    generation_kwargs["max_new_tokens"] = req.max_new_tokens
-
-  #prompt
-  prompt = (
-      "You are a concise, helpful assistant for a hotel booking website. "
-      "Answer the user's question in at most two short sentences.\n"
-      f"User: {req.message}\n"
-      "Assistant:"
+    existing_like = (
+        db.query(models.Like)
+        .filter(models.Like.hotel_id == hotel_id, models.Like.user_id == user_id)
+        .first()
     )
 
-  #genera risposta
-  generated = _generator(prompt, **generation_kwargs)
+    db_hotel = db.query(models.Hotel).filter(models.Hotel.id == hotel_id).first()
+    if db_hotel is None:
+        raise HTTPException(status_code=404, detail="Hotel not found")
 
-  #restituisce solo la parte di testo generata, senza il prompt
-  answer_txt = generated[0]["generated_text"].strip()  # rimuove spazi bianchi iniziali e finali
+    if existing_like:
+        db.delete(existing_like)
+        db_hotel.likes = db_hotel.likes - 1
+    else:
+        new_like = models.Like(hotel_id=hotel_id, user_id=user_id)
+        db.add(new_like)
+        db_hotel.likes = db_hotel.likes + 1
 
-  return {"answer": answer_txt, "source": "local-llm"}
-#blocco di avvio file senza stringa di comando
+    db.commit()
+    return {"total_likes": db_hotel.likes}
+
+
+@app.post("/hotels/{hotel_id}/ai_summary")
+def save_ai_summary(hotel_id: str, payload: dict, db: Session = Depends(get_db)):
+    db_hotel = db.query(models.Hotel).filter(models.Hotel.id == hotel_id).first()
+    if not db_hotel:
+        raise HTTPException(status_code=404, detail="Hotel not found")
+    db_hotel.ai_summary = json.dumps(payload)
+    db.commit()
+    return {"status": "success"}
+
+
+# ==================== CHATBOT ====================
+_FAQ_FILE = os.path.join(os.path.dirname(__file__), "faqs.json")
+_faqs = None
+
+
+def load_faqs():
+    global _faqs
+    if _faqs is None:
+        with open(_FAQ_FILE, "r", encoding="utf-8") as f:
+            _faqs = json.load(f)
+    return _faqs
+
+
+def is_hotel_related(message: str) -> bool:
+    """Controlla se il messaggio è correlato a Hotel.io (prenotazioni, servizi, etc.)"""
+    hotel_keywords = [
+        "hotel",
+        "booking",
+        "prenotazione",
+        "camera",
+        "room",
+        "stay",
+        "breakfast",
+        "colazione",
+        "cancellation",
+        "cancellazione",
+        "payment",
+        "pagamento",
+        "review",
+        "recensione",
+        "star",
+        "stelle",
+        "hotel.io",
+        "hotelio",
+        "price",
+        "prezzo",
+        "amenities",
+        "servizi",
+        "check-in",
+        "check-out",
+        "guest",
+        "ospite",
+        "host",
+    ]
+    msg_lower = message.lower()
+    return any(keyword in msg_lower for keyword in hotel_keywords)
+
+
+def find_similar_faq(message: str) -> dict | None:
+    """Trova la FAQ più simile solo se il messaggio è correlato a Hotel.io"""
+    if not is_hotel_related(message):
+        return None
+
+    faqs = load_faqs()
+    message_lower = message.lower()
+    words = set(message_lower.split())
+    best_match = None
+    best_score = 0
+
+    for faq in faqs:
+        question_words = set(faq["question"].lower().split())
+        score = len(words & question_words)
+        if score > best_score:
+            best_score = score
+            best_match = faq
+
+    # Solo se c'è un match significativo (almeno 2 parole in comune)
+    if best_score >= 2:
+        return best_match
+    return None
+
+
+def get_hotel_context(db: Session) -> list:
+    hotels_context = []
+    try:
+        all_hotels = (
+            db.query(models.Hotel).order_by(models.Hotel.price.asc()).limit(3).all()
+        )
+        for h in all_hotels:
+            dist = (
+                f", {h.distanceFromCenter}km dal centro" if h.distanceFromCenter else ""
+            )
+            hotels_context.append(f"- {h.name} a {h.location}: €{h.price}/notte{dist}")
+    except Exception as e:
+        print(f"Error fetching hotels: {e}")
+    return hotels_context
+
+
+@app.post("/chatbot")
+def chatbot_endpoint(request: schemas.ChatRequest, db: Session = Depends(get_db)):
+    user_message = request.message.strip()
+    msg_lower = user_message.lower().strip()
+    faqs = load_faqs()
+
+    # 1. Risposte rapide per saluti
+    greetings = ["hello", "hi", "ciao", "salve", "buongiorno", "buonasera"]
+    if any(g in msg_lower for g in greetings):
+        return {
+            "answer": "Ciao! Sono l'assistente di Hotel.io. Come posso aiutarti a trovare l'hotel perfetto?",
+            "source": "assistant",
+            "context": [],
+        }
+
+    # 2. Hotel dal DB (per dare contesto a GPT)
+    hotels_context = get_hotel_context(db)
+    context_text = "\n".join(hotels_context) if hotels_context else ""
+
+    # 3. FAQ solo per domande specifiche su Hotel.io
+    similar_faq = find_similar_faq(user_message)
+    if similar_faq:
+        return {"answer": similar_faq["answer"], "source": "faq", "context": []}
+
+    # 4. GPT 3.5 per tutto il resto
+    if os.getenv("OPENAI_API_KEY"):
+        try:
+            from openai import OpenAI
+
+            client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+            system_prompt = """Sei un assistente di viaggio amichevole e conciso. 
+Rispondi in 2-3 frasi in italiano.
+Puoi consigliare hotel, destinazioni, attività turistiche e dare suggerimenti di viaggio.
+Se l'utente chiede di hotel specifici, dai suggerimenti basandoti sui dati disponibili."""
+
+            user_prompt = f"""Domanda: {user_message}"""
+            if context_text:
+                user_prompt += f"\n\nHotel disponibili:\n{context_text}"
+
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.7,
+                max_tokens=150,
+            )
+            answer = response.choices[0].message.content or "Non ho capito, riprova!"
+            return {"answer": answer, "source": "openai", "context": hotels_context}
+        except Exception as e:
+            print(f"OpenAI error: {e}")
+
+    # 5. Fallback (senza OpenAI)
+    fallback = "Sono l'assistente di Hotel.io! Prova a chiedermi di hotel, destinazioni o consigli di viaggio."
+    return {"answer": fallback, "source": "fallback", "context": hotels_context}
+
+
 if __name__ == "__main__":
-  import uvicorn
+    import uvicorn
 
-  uvicorn.run(
-    "main:app",
-    host="127.0.0.1",
-    port=8000,
-    reload=True,
-  )
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

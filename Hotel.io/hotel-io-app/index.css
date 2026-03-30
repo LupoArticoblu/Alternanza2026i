@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Stili globali */
 html, body {
   overflow-x: hidden;

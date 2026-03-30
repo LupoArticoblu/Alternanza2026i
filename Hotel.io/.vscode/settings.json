@@ -8,5 +8,4 @@
   "python.analysis.useLibraryCodeForTypes": true,
   "python.languageServer": "Pylance",
   "python.analysis.typeCheckingMode": "basic",   // opzionale
-  "python.analysis.autoSearchPaths": true
 }

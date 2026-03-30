@@ -1,0 +1,23 @@
+# Variabili d'ambiente - MAI caricare su Git!
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+
+# Database locale
+*.db
+*.sqlite
+
+# Node / Angular
+node_modules/
+dist/
+
+# IDE
+.vscode/
+.idea/

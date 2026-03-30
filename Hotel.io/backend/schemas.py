@@ -59,10 +59,10 @@ class Hotel(HotelBase):
   likes: int
   isLiked: bool = False
   reviews: list[Review] = [] #inizializziamo la lista di recensioni
-  
-  # Questo campo riceve il JSON del riassunto AI sotto forma di stringa dal database
-  ai_summary: Optional[str] = None
-  
-  class Config:
-    from_attributes = True
+
+  # aiAnalysis è il riassunto AI decodificato da JSON (può essere dict, list o None)
+  aiAnalysis: Optional[object] = None
+
+  model_config = {"from_attributes": True, "extra": "ignore"}
+
 

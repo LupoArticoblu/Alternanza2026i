@@ -1,17 +1,17 @@
 import {
   withHttpTransferCache
-} from "./chunk-EQRXY6SZ.js";
+} from "./chunk-R3FNMBSC.js";
 import {
   CommonModule,
   PLATFORM_BROWSER_ID
-} from "./chunk-NCRKH7YR.js";
+} from "./chunk-OW76OHP6.js";
 import {
   DomAdapter,
   XhrFactory,
   getDOM,
   parseCookieValue,
   setRootDomAdapter
-} from "./chunk-ZJG2JO4U.js";
+} from "./chunk-CKBA3XM2.js";
 import {
   APP_ID,
   ApplicationModule,
@@ -72,7 +72,7 @@ import {
   ɵɵdefineInjector,
   ɵɵdefineNgModule,
   ɵɵinject
-} from "./chunk-5DM77IZF.js";
+} from "./chunk-E5EAER3X.js";
 import "./chunk-J46EEYGT.js";
 import "./chunk-4YCCEXQQ.js";
 import {
@@ -1709,7 +1709,7 @@ function provideClientHydration(...features) {
   }
   return makeEnvironmentProviders([typeof ngDevMode !== "undefined" && ngDevMode ? provideEnabledBlockingInitialNavigationDetector() : [], typeof ngDevMode !== "undefined" && ngDevMode ? provideStabilityDebugging() : [], withDomHydration(), featuresKind.has(HydrationFeatureKind.NoHttpTransferCache) || hasHttpTransferCacheOptions ? [] : withHttpTransferCache({}), providers]);
 }
-var VERSION = new Version("21.2.4");
+var VERSION = new Version("21.2.1");
 export {
   BrowserModule,
   By,

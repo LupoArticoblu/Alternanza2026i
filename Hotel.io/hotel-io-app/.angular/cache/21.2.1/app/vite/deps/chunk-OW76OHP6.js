@@ -1,6 +1,6 @@
 import {
   PlatformLocation
-} from "./chunk-ZJG2JO4U.js";
+} from "./chunk-CKBA3XM2.js";
 import {
   ApplicationRef,
   Attribute,
@@ -62,7 +62,7 @@ import {
   ɵɵinject,
   ɵɵinjectAttribute,
   ɵɵstyleProp
-} from "./chunk-5DM77IZF.js";
+} from "./chunk-E5EAER3X.js";
 import {
   Subject,
   __spreadProps,
@@ -3296,7 +3296,7 @@ function isPlatformBrowser(platformId) {
 function isPlatformServer(platformId) {
   return platformId === PLATFORM_SERVER_ID;
 }
-var VERSION = new Version("21.2.4");
+var VERSION = new Version("21.2.1");
 var ViewportScroller = class _ViewportScroller {
   static ɵprov = ɵɵdefineInjectable({
     token: _ViewportScroller,
@@ -4660,4 +4660,4 @@ export {
   PRECONNECT_CHECK_BLOCKLIST,
   NgOptimizedImage
 };
-//# sourceMappingURL=chunk-NCRKH7YR.js.map
+//# sourceMappingURL=chunk-OW76OHP6.js.map

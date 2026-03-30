@@ -2,8 +2,10 @@ fastapi
 uvicorn
 sqlalchemy
 pydantic
-transformers
-torch
 passlib[bcrypt]
 python-jose[cryptography]
 python-multipart
+openai
+python-dotenv
+sentence-transformers
+faiss-cpu

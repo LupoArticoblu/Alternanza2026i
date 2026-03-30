@@ -39,7 +39,7 @@ export class HotelService {
 
   currentUser = signal<any>(null);//memorizza utente loggato
   private http = inject(HttpClient);
-  private apiUrl = 'http://hotel.local:8000'; //indirizzo backend locale
+  private apiUrl = 'http://localhost:8000'; // backend API endpoint
   
   private hotelsSignal = signal<Hotel[]>([]); //dove andranno segnati/inseriti i vari hotel
   //metodo login
@@ -71,44 +71,22 @@ export class HotelService {
   hotels = computed(() => this.hotelsSignal());
 
   constructor() {
-    this.fetchHotels(); //carica gli hotel dal db all'avvio
+    this.fetchHotels();
   }
 
-  // addHotel(hotel: Omit<Hotel, 'id' | 'likes' | 'isLiked' | 'reviews'>) {
-  //   const newHotel: Hotel = {
-  //     ...hotel,
-  //     id: crypto.randomUUID(),
-  //     likes: 0,
-  //     isLiked: false,
-  //     reviews: []
-  //   };
-  //   this.hotelsSignal.update(hotels => [newHotel, ...hotels]);
-  // }
-
   addHotel(hotelData: any, ownerId: string) {
-  // Inviamo i dati al backend. 
-  // Nota: usiamo i parametri per passare l'owner_id
-  this.http.post<Hotel>(`${this.apiUrl}/hotels?owner_id=${ownerId}`, hotelData)
-    .subscribe({
-      next: () => {
-        // Dopo aver salvato, ricarichiamo la lista
-        this.fetchHotels();
-      },
-      error: (err) => console.error('Errore durante il salvataggio:', err)
-    });
-}
-
-  // updateHotel(updateHotel:Hotel){
-  //   this.hotelsSignal.update(hotels => hotels.map(h => h.id === updateHotel.id ? updateHotel : h));
-  // }
+    this.http.post<Hotel>(`${this.apiUrl}/hotels?owner_id=${ownerId}`, hotelData)
+      .subscribe({
+        next: () => {
+          this.fetchHotels();
+        },
+        error: (err) => console.error('Errore durante il salvataggio:', err)
+      });
+  }
 
   updateHotel(hotel:Hotel){
     this.http.put<Hotel>(`${this.apiUrl}/hotels/${hotel.id}`,hotel).subscribe(() => this.fetchHotels());
   }
-
-  // deleteHotel(id:string){
-  //   this.hotelsSignal.update(hotels => hotels.filter(h => h.id !== id));
-  // }
 
   deleteHotel(id:string){
     if(confirm("Are you sure want to delete this hotel?")){
@@ -136,68 +114,13 @@ export class HotelService {
     const hotel = this.hotelsSignal().find(h => h.id === hotelId);
     if (!hotel || hotel.reviews.length === 0) return;
     
-    // EVITARE DOPPIE CHIAMATE
-    // Se l'analisi c'è già (es. l'ha già generata qualcun altro e noi
-    // l'abbiamo scaricata assieme ai dati dell'hotel), interrompiamo 
-    // l'esecuzione senza chiamare Ollama di nuovo.
     if (hotel.aiAnalysis) return; 
 
-    // Set loading state
     this.hotelsSignal.update(hotels =>
       hotels.map(h => h.id === hotelId ? { ...h, isAnalyzing: true } : h)
     );
 
-    // try {
-    //   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    //   const reviewsText = hotel.reviews.map(r => `"${r.comment}" (Rating: ${r.rating}/5)`).join('\n');
-      
-    //   const prompt = `
-    //     You are an expert travel critic. Analyze the following reviews for the hotel "${hotel.name}".
-    //     Provide a concise summary, a calculated overall score out of 10 based on sentiment, 
-    //     a list of key strengths, and a list of key weaknesses.
-        
-    //     Reviews:
-    //     ${reviewsText}
-    //   `;
-
-    //   const response = await ai.models.generateContent({
-    //     model: 'gemini-2.5-flash',
-    //     contents: prompt,
-    //     config: {
-    //       responseMimeType: 'application/json',
-    //       responseSchema: {
-    //         type: Type.OBJECT,
-    //         properties: {
-    //           summary: { type: Type.STRING },
-    //           score: { type: Type.NUMBER },
-    //           strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
-    //           weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
-    //         },
-    //         required: ["summary", "score", "strengths", "weaknesses"]
-    //       }
-    //     }
-    //   });
-
-    //   const jsonText = response.text;
-    //   if (jsonText) {
-    //     const analysis: AIAnalysis = JSON.parse(jsonText);
-        
-    //     this.hotelsSignal.update(hotels =>
-    //       hotels.map(h => h.id === hotelId ? { ...h, aiAnalysis: analysis, isAnalyzing: false } : h)
-    //     );
-    //   } else {
-    //     throw new Error('No response from AI');
-    //   }
-
-    // } catch (error) {
-    //   console.error('AI Analysis failed', error);
-    //   this.hotelsSignal.update(hotels =>
-    //     hotels.map(h => h.id === hotelId ? { ...h, isAnalyzing: false } : h)
-    //   );
-    // }
-
-    /*usiamo ollama per la logica del tasto summary*/
-    try{
+    try {
       const reviewsText = hotel.reviews.map(r => `${r.user}: ${r.comment}: ${r.rating}`).join('\n');
       const prompt = `
         you are an expert travel critic. Analyze the following reviews for the hotel "${hotel.name}".
@@ -221,29 +144,21 @@ export class HotelService {
        };
        this.http.post("http://localhost:11434/api/generate", body).subscribe({
         next: (res: any) => {
-          //trasforma la stringa di ollama in oggetto
           const analysis: AIAnalysis = JSON.parse(res.response);
-          //trova l'hotel e aggiorna analisi
           this.hotelsSignal.update(hotels => hotels.map(h => h.id === hotelId ? { ...h, aiAnalysis: analysis, isAnalyzing: false}: h));
-          
-          // SALVATAGGIO PER TUTTI GLI UTENTI
-          // Inviamo il risultato al backend "dietro le quinte" per salvarlo 
-          // nel database. In questo modo il lavoro compiuto da Ollama è permanente
-          // e accessibile istantaneamente agli altri utenti.
           this.http.post(`${this.apiUrl}/hotels/${hotelId}/ai_summary`, analysis).subscribe();
         },
         error: (err) =>{
           console.error("Error analyzing reviews:", err);
-          //in caso di errore, imposta isAnalyzing a false
           this.hotelsSignal.update(hotels => hotels.map(h => h.id === hotelId ? { ...h, isAnalyzing: false}: h));
         }
        });
     }
     catch(error){
       console.error("Error analyzing reviews:", error);
-      //Questa riga serve a dire all'interfaccia: "C'è stato un errore, smetti di mostrare l'animazione di caricamento per questo hotel specifico e torna allo stato normale" così l'utente non rimane con il pulsante bloccato su "Analyzing..." per sempre
-      this.hotelsSignal.update(hotels => hotels.map(h => h.id === hotelId ? { ...h, isAnalyzing: false}: h)
+      this.hotelsSignal.update(hotels =>
+        hotels.map(h => h.id === hotelId ? { ...h, isAnalyzing: false}: h)
       );
     }
   }
-} 
+}
