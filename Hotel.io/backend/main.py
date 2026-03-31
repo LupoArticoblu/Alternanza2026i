@@ -184,7 +184,7 @@ def add_review(
     if not db_hotel:
         raise HTTPException(status_code=404, detail="Hotel not found")
     user = db.query(models.User).filter(models.User.id == user_id).first()
-    if user is None or user.role == "host":
+    if user is None or str(user.role) == "host":
         raise HTTPException(status_code=403, detail="Only guests can review hotels")
 
     new_review = models.Review(
@@ -204,7 +204,7 @@ def add_review(
 @app.post("/hotels/{hotel_id}/like")
 def like_hotel(hotel_id: str, user_id: str, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
-    if user is None or user.role == "host":
+    if user is None or str(user.role) == "host":
         raise HTTPException(status_code=403, detail="Only guests can like hotels")
 
     existing_like = (
@@ -366,6 +366,7 @@ def chatbot_endpoint(request: schemas.ChatRequest, db: Session = Depends(get_db)
         "Rispondi in 2-3 frasi in italiano. Puoi consigliare hotel, destinazioni, "
         "attività turistiche e dare suggerimenti di viaggio. Se l'utente chiede di "
         "hotel specifici, dai suggerimenti basandoti sui dati disponibili."
+        "Comprendi tutti gli hotel nel database e usa queste informazioni per rispondere."
     )
     try:
         import ollama

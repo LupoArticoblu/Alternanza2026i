@@ -30,18 +30,6 @@ import { ChatService } from '../services/chat.service';
         </div>
       </header>
 
-      <!-- Mostra qui il contesto dinamico (1-3 hotel) estratto dal backend -->
-      @if (contextLines?.length) {
-        <section class="context-box p-2 mb-2 bg-gray-50 border rounded text-sm text-gray-700">
-          <div class="font-semibold text-xs mb-1">Contesto rilevante</div>
-          <ul>
-            @for (line of contextLines; track line) {
-              <li>{{ line }}</li>
-            }
-          </ul>
-        </section>
-      }
-
       @if (!minimized) {
         <main class="messages flex-1 p-3 overflow-y-auto" tabindex="0">
           @for (msg of messages; track msg.id) {
