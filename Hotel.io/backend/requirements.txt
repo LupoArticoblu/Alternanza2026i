@@ -9,3 +9,4 @@ openai
 python-dotenv
 sentence-transformers
 faiss-cpu
+ollama

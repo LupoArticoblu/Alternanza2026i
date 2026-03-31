@@ -16,9 +16,6 @@ from database import engine, get_db
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-load_dotenv = __import__("dotenv", fromlist=["load_dotenv"]).load_dotenv
-load_dotenv()
-
 models.Base.metadata.create_all(bind=engine)
 
 from sqlalchemy import text
@@ -55,12 +52,33 @@ app.add_middleware(
 def read_root():
     return {"status": "ok", "message": "Hotel.io API is running"}
 
+# Test endpoint per verificare che Ollama è raggiungibile
+@app.get("/test_ollama")
+def test_ollama():
+    """Endpoint di test per verificare la connessione a Ollama"""
+    try:
+        import ollama
+        print("[TEST] Testing Ollama connection...")
+        resp = ollama.generate(
+            model="gemma3:4b",
+            prompt="Test",
+            options={"num_predict": 5}
+        )
+        return {"status": "ok", "message": "Ollama is working", "response": resp.get('response', '')}
+    except Exception as e:
+        import traceback
+        error_msg = f"{str(e)}\n{traceback.format_exc()}"
+        print(f"[TEST ERROR] {error_msg}")
+        return {"status": "error", "message": str(e), "traceback": error_msg}
+
+# ------------------------------------------------------------
+
 
 # ==================== USER ENDPOINTS ====================
 @app.post("/login")
 def login(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_data.email).first()
-    if user is None or user.password != user_data.password:
+    if user is None or user.password is not user_data.password:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
         )
@@ -104,7 +122,7 @@ def get_hotels(user_id: Optional[str] = None, db: Session = Depends(get_db)):
         summary_val = hotel.ai_summary
         if summary_val is not None:
             try:
-                hotel_dict["aiAnalysis"] = json.loads(summary_val)
+                hotel_dict["aiAnalysis"] = json.loads(str(summary_val))
             except Exception:
                 hotel_dict["aiAnalysis"] = None
         else:
@@ -176,7 +194,7 @@ def add_review(
         **review.dict(),
         date=datetime.now().strftime("%Y-%m-%d"),
     )
-    db_hotel.ai_summary = None
+    db_hotel.ai_summary = ""  # type: ignore
     db.add(new_review)
     db.commit()
     db.refresh(new_review)
@@ -201,11 +219,13 @@ def like_hotel(hotel_id: str, user_id: str, db: Session = Depends(get_db)):
 
     if existing_like:
         db.delete(existing_like)
-        db_hotel.likes = db_hotel.likes - 1
+        # Ensure integer arithmetic for likes count
+        db_hotel.likes = int(db_hotel.likes) - 1  # type: ignore[assignment]
     else:
         new_like = models.Like(hotel_id=hotel_id, user_id=user_id)
         db.add(new_like)
-        db_hotel.likes = db_hotel.likes + 1
+        # Ensure integer arithmetic for likes count
+        db_hotel.likes = int(db_hotel.likes) + 1  # type: ignore[assignment]
 
     db.commit()
     return {"total_likes": db_hotel.likes}
@@ -216,7 +236,7 @@ def save_ai_summary(hotel_id: str, payload: dict, db: Session = Depends(get_db))
     db_hotel = db.query(models.Hotel).filter(models.Hotel.id == hotel_id).first()
     if not db_hotel:
         raise HTTPException(status_code=404, detail="Hotel not found")
-    db_hotel.ai_summary = json.dumps(payload)
+    db_hotel.ai_summary = json.dumps(payload)  # type: ignore[assignment]
     db.commit()
     return {"status": "success"}
 
@@ -292,80 +312,84 @@ def find_similar_faq(message: str) -> dict | None:
         return best_match
     return None
 
-
-def get_hotel_context(db: Session) -> list:
-    hotels_context = []
+# ---------------------------------------------------------------------
+# Helper to retrieve a short context of top 3 hotels from the DB
+# ---------------------------------------------------------------------
+def get_hotel_context(db: Session) -> List[str]:
+    """Restituisce una lista di stringhe con le informazioni dei 3 hotel più economici."""
     try:
-        all_hotels = (
-            db.query(models.Hotel).order_by(models.Hotel.price.asc()).limit(3).all()
+        hotels = (
+            db.query(models.Hotel)
+            .order_by(models.Hotel.price.asc())
+            .limit(3)
+            .all()
         )
-        for h in all_hotels:
-            dist = (
-                f", {h.distanceFromCenter}km dal centro" if h.distanceFromCenter else ""
-            )
-            hotels_context.append(f"- {h.name} a {h.location}: €{h.price}/notte{dist}")
-    except Exception as e:
-        print(f"Error fetching hotels: {e}")
-    return hotels_context
+    except Exception:
+        return []
+    context = []
+    for h in hotels:
+        dist = f", {h.distanceFromCenter}km dal centro" if getattr(h, "distanceFromCenter", None) is not None else ""
+        context.append(f"- {h.name} a {h.location}: €{h.price}/notte{dist}")
+    return context
 
-
+# ---------------------------------------------------------------------
+# Endpoint del chatbot che utilizza Ollama per generare le risposte
+# ---------------------------------------------------------------------
 @app.post("/chatbot")
 def chatbot_endpoint(request: schemas.ChatRequest, db: Session = Depends(get_db)):
     user_message = request.message.strip()
-    msg_lower = user_message.lower().strip()
-    faqs = load_faqs()
+    msg_lower = user_message.lower()
 
-    # 1. Risposte rapide per saluti
+    # 1. Saluti rapidi - solo se il messaggio è principalmente un saluto (1-2 parole non molto lunghe)
     greetings = ["hello", "hi", "ciao", "salve", "buongiorno", "buonasera"]
-    if any(g in msg_lower for g in greetings):
+    words_in_message = msg_lower.split()
+    # Se il messaggio ha 2 o meno parole E contiene un saluto, trattalo come saluto puro
+    if len(words_in_message) <= 2 and any(g in msg_lower for g in greetings):
         return {
             "answer": "Ciao! Sono l'assistente di Hotel.io. Come posso aiutarti a trovare l'hotel perfetto?",
             "source": "assistant",
             "context": [],
         }
 
-    # 2. Hotel dal DB (per dare contesto a GPT)
+    # 2. Contesto hotel dal DB
     hotels_context = get_hotel_context(db)
     context_text = "\n".join(hotels_context) if hotels_context else ""
 
-    # 3. FAQ solo per domande specifiche su Hotel.io
+    # 3. FAQ specifiche
     similar_faq = find_similar_faq(user_message)
     if similar_faq:
         return {"answer": similar_faq["answer"], "source": "faq", "context": []}
 
-    # 4. GPT 3.5 per tutto il resto
-    if os.getenv("OPENAI_API_KEY"):
-        try:
-            from openai import OpenAI
-
-            client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-            system_prompt = """Sei un assistente di viaggio amichevole e conciso. 
-Rispondi in 2-3 frasi in italiano.
-Puoi consigliare hotel, destinazioni, attività turistiche e dare suggerimenti di viaggio.
-Se l'utente chiede di hotel specifici, dai suggerimenti basandoti sui dati disponibili."""
-
-            user_prompt = f"""Domanda: {user_message}"""
-            if context_text:
-                user_prompt += f"\n\nHotel disponibili:\n{context_text}"
-
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                temperature=0.7,
-                max_tokens=150,
-            )
-            answer = response.choices[0].message.content or "Non ho capito, riprova!"
-            return {"answer": answer, "source": "openai", "context": hotels_context}
-        except Exception as e:
-            print(f"OpenAI error: {e}")
-
-    # 5. Fallback (senza OpenAI)
-    fallback = "Sono l'assistente di Hotel.io! Prova a chiedermi di hotel, destinazioni o consigli di viaggio."
-    return {"answer": fallback, "source": "fallback", "context": hotels_context}
+    # 4. Generazione risposta con Ollama
+    system_prompt = (
+        "Sei un assistente di viaggio amichevole e conciso. "
+        "Rispondi in 2-3 frasi in italiano. Puoi consigliare hotel, destinazioni, "
+        "attività turistiche e dare suggerimenti di viaggio. Se l'utente chiede di "
+        "hotel specifici, dai suggerimenti basandoti sui dati disponibili."
+    )
+    try:
+        import ollama
+    except ImportError:
+        raise Exception("Il pacchetto 'ollama' non è installato. Aggiungilo a requirements.txt e installalo.")
+    try:
+        full_prompt = f"{system_prompt}\n\nDomanda: {user_message}\n"
+        if context_text:
+            full_prompt += f"\nHotel disponibili:\n{context_text}\n"
+        print(f"[DEBUG] Calling Ollama with model 'gemma3:4b'...")
+        ollama_resp = ollama.generate(
+            model="gemma3:4b",
+            prompt=full_prompt,
+            options={"temperature": 0.7, "num_predict": 150},
+        )
+        answer = ollama_resp.get('response', '').strip() or "Non ho capito, riprova!"
+        print(f"[DEBUG] Ollama response received: {answer[:50]}...")
+        return {"answer": answer, "source": "ollama", "context": hotels_context}
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] Ollama error: {e}")
+        print(f"[ERROR] Full traceback:\n{traceback.format_exc()}")
+        fallback = "Sono l'assistente di Hotel.io! Prova a chiedermi di hotel, destinazioni o consigli di viaggio."
+        return {"answer": fallback, "source": "fallback", "context": hotels_context}
 
 
 if __name__ == "__main__":
