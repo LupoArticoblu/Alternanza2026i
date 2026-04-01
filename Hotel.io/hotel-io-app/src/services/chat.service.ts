@@ -3,6 +3,11 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
+export interface FAQEntry {
+    question: string;
+    answer: string;
+}
+
 export interface ChatRequest {
     message: string;
     temperature?: number;
@@ -13,6 +18,7 @@ export interface ChatResponse {
     answer: string;
     source: string;
     context?: string[];
+    faq_suggestions?: FAQEntry[];
 }
 
 @Injectable({

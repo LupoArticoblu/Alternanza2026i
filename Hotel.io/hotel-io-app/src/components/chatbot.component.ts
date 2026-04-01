@@ -1,7 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ChatService } from '../services/chat.service';
+import { ChatService, FAQEntry } from '../services/chat.service';
 
 /**
  * Simple chatbot UI component.
@@ -13,20 +13,25 @@ import { ChatService } from '../services/chat.service';
   imports: [CommonModule, FormsModule],
   template: `
   @if (minimized) {
-    <div class="open-chat-floating" (click)="openFromFloating()" role="button" aria-label="Apri chat">Apri Chat</div>
+    <div class="open-chat-floating" (click)="openFromFloating()" role="button" aria-label="Open chat">Open Chat</div>
   }
   @if (!minimized) {
-    <div class="chat-root flex flex-col bg-white shadow-lg border rounded-lg" role="region" aria-label="Assistente di viaggio">
+    <div class="chat-root flex flex-col bg-white shadow-lg border rounded-lg" role="region" aria-label="Travel Assistant">
       <header class="chat-header flex items-center justify-between px-3 py-2 border-b">
         <div class="flex items-center space-x-2">
           <div class="avatar w-8 h-8 rounded bg-blue-600 text-white flex items-center justify-center">H</div>
           <div>
-            <div class="font-semibold">Hotello</div>
-            <div class="text-xs text-gray-500">Chiedimi informazioni su hotel, destinazioni e consigli</div>
+            <div class="font-semibold">Hotel.io Assistant</div>
+            <div class="text-xs text-gray-500">Ask me about hotels, destinations and travel tips</div>
           </div>
         </div>
         <div class="flex items-center space-x-2">
-          <button aria-label="Chiudi" (click)="closeChat()" class="text-sm text-gray-600">x</button>
+          <button aria-label="Start New Chat" (click)="startNewChat()" class="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors" title="Start New Chat">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+            </svg>
+          </button>
+          <button aria-label="Close" (click)="closeChat()" class="text-sm text-gray-600 hover:text-gray-800">x</button>
         </div>
       </header>
 
@@ -37,17 +42,28 @@ import { ChatService } from '../services/chat.service';
               <div class="msg-bubble" [ngClass]="msg.fromUser ? 'user' : 'bot'">
                 <div class="flex items-start justify-between">
                   <div class="msg-text">{{ msg.text }}</div>
-                  <!-- badge sorgente per i messaggi del bot -->
                   @if (msg.source && !msg.fromUser) {
                     <div class="source-badge text-xs ml-2 text-white px-2 py-0.5 rounded">
                       {{ msg.source }}
                     </div>
                   }
                 </div>
+                @if (!msg.fromUser && msg.faqSuggestions && msg.faqSuggestions.length > 0) {
+                  <div class="faq-suggestions mt-3 pt-3 border-t border-gray-200">
+                    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Related Questions</div>
+                    @for (faq of msg.faqSuggestions; track $index) {
+                      <button 
+                        (click)="askFAQ(faq.question)" 
+                        class="faq-suggestion-btn w-full text-left text-sm px-3 py-2 mb-1 rounded-lg border border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition-colors text-gray-700">
+                        <span class="font-medium text-blue-600">Q:</span> {{ faq.question }}
+                      </button>
+                    }
+                  </div>
+                }
                 <div class="msg-meta text-xs text-gray-400 mt-1 flex items-center space-x-2">
                   <span>{{ msg.time }}</span>
                   @if (msg.status === 'error') {
-                    <button (click)="retry(msg)" class="text-blue-500 text-xs">Riprova</button>
+                    <button (click)="retry(msg)" class="text-blue-500 text-xs">Retry</button>
                   }
                 </div>
               </div>
@@ -65,8 +81,8 @@ import { ChatService } from '../services/chat.service';
 
       <footer class="input-area p-3 border-t">
         <form (submit)="onSubmit($event)" class="flex items-center space-x-2">
-          <input [(ngModel)]="userInput" name="userInput" [disabled]="sending" (keydown.enter)="onSubmit($event)" placeholder="Chiedi qualcosa sull'organizzazione del viaggio..." class="flex-1 border rounded px-3 py-2" aria-label="Messaggio" />
-          <button type="submit" [disabled]="sending || !userInput.trim()" class="bg-blue-600 text-white px-4 py-2 rounded">{{ sending ? 'Attendi' : 'Invia' }}</button>
+          <input [(ngModel)]="userInput" name="userInput" [disabled]="sending" (keydown.enter)="onSubmit($event)" placeholder="Ask me about hotels, destinations, travel tips..." class="flex-1 border rounded px-3 py-2" aria-label="Message" />
+          <button type="submit" [disabled]="sending || !userInput.trim()" class="bg-blue-600 text-white px-4 py-2 rounded">{{ sending ? 'Sending' : 'Send' }}</button>
         </form>
       </footer>
     </div>
@@ -103,11 +119,14 @@ import { ChatService } from '../services/chat.service';
     /* semplificazione: rendiamo più visibile l'header e riduciamo padding inutili */
     .chat-header { padding: 10px; }
     .msg-bubble { word-wrap: break-word; }
+    .faq-suggestions { border-top: 1px solid #e5e7eb; }
+    .faq-suggestion-btn { cursor: pointer; transition: all 0.15s ease; }
+    .faq-suggestion-btn:hover { background: #eff6ff; border-color: #93c5fd; }
   `
 })
 export class ChatbotComponent implements OnInit {
   // messages: aggiunta campo `source` per visualizzare badge (faq/local-llm/fallback)
-  messages: { id: string; text: string; fromUser: boolean; time: string; status?: 'sent'|'received'|'loading'|'error'; source?: string }[] = [];
+  messages: { id: string; text: string; fromUser: boolean; time: string; status?: 'sent'|'received'|'loading'|'error'; source?: string; faqSuggestions?: FAQEntry[] }[] = [];
   userInput = '';
   sending = false;
   typing = false;
@@ -174,11 +193,19 @@ export class ChatbotComponent implements OnInit {
         console.log('--- [FE] Risposta ricevuta con successo ---');
         console.log('Dati ricevuti:', resp);
         const receivedTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const answerText = resp.answer || 'Mi dispiace, non ho una risposta.';
+        const answerText = resp.answer || 'Sorry, I could not generate a response.';
         if (resp.context && Array.isArray(resp.context)) {
           this.contextLines = resp.context;
         }
-        this.messages.push({ id: id + '_b', text: answerText, fromUser: false, time: receivedTime, status: 'received', source: resp.source });
+        this.messages.push({ 
+          id: id + '_b', 
+          text: answerText, 
+          fromUser: false, 
+          time: receivedTime, 
+          status: 'received', 
+          source: resp.source,
+          faqSuggestions: resp.faq_suggestions || []
+        });
         this.sending = false;
         this.typing = false;
         this.persist();
@@ -231,8 +258,28 @@ export class ChatbotComponent implements OnInit {
   private scrollToBottom() {
     const container = document.querySelector('.messages');
     if (container) {
-      // Scroll to absolute bottom per mostrare sempre l'ultima risposta
       container.scrollTop = container.scrollHeight;
     }
+  }
+
+  askFAQ(question: string) {
+    this.userInput = question;
+    this.send();
+  }
+
+  startNewChat() {
+    // Clear conversation history
+    this.messages = [];
+    this.contextLines = [];
+    this.userInput = '';
+    this.sending = false;
+    this.typing = false;
+    // Remove from localStorage
+    try {
+      localStorage.removeItem(this.storageKey);
+    } catch (e) {
+      console.warn('Could not clear chat history', e);
+    }
+    this.cdr.detectChanges();
   }
 }

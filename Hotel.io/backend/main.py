@@ -52,33 +52,12 @@ app.add_middleware(
 def read_root():
     return {"status": "ok", "message": "Hotel.io API is running"}
 
-# Test endpoint per verificare che Ollama è raggiungibile
-@app.get("/test_ollama")
-def test_ollama():
-    """Endpoint di test per verificare la connessione a Ollama"""
-    try:
-        import ollama
-        print("[TEST] Testing Ollama connection...")
-        resp = ollama.generate(
-            model="gemma3:4b",
-            prompt="Test",
-            options={"num_predict": 5}
-        )
-        return {"status": "ok", "message": "Ollama is working", "response": resp.get('response', '')}
-    except Exception as e:
-        import traceback
-        error_msg = f"{str(e)}\n{traceback.format_exc()}"
-        print(f"[TEST ERROR] {error_msg}")
-        return {"status": "error", "message": str(e), "traceback": error_msg}
-
-# ------------------------------------------------------------
-
 
 # ==================== USER ENDPOINTS ====================
 @app.post("/login")
 def login(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_data.email).first()
-    if user is None or user.password is not user_data.password:
+    if user is None or str(user.password) != str(user_data.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
         )
@@ -255,10 +234,11 @@ def load_faqs():
 
 
 def is_hotel_related(message: str) -> bool:
-    """Controlla se il messaggio è correlato a Hotel.io (prenotazioni, servizi, etc.)"""
+    """Check if the message is related to Hotel.io (bookings, services, etc.)"""
     hotel_keywords = [
         "hotel",
         "booking",
+        "book",
         "prenotazione",
         "camera",
         "room",
@@ -290,7 +270,7 @@ def is_hotel_related(message: str) -> bool:
 
 
 def find_similar_faq(message: str) -> dict | None:
-    """Trova la FAQ più simile solo se il messaggio è correlato a Hotel.io"""
+    """Find the most similar FAQ only if the message is Hotel.io related"""
     if not is_hotel_related(message):
         return None
 
@@ -307,90 +287,251 @@ def find_similar_faq(message: str) -> dict | None:
             best_score = score
             best_match = faq
 
-    # Solo se c'è un match significativo (almeno 2 parole in comune)
+    # Only if there is a significant match (at least 2 words in common)
     if best_score >= 2:
         return best_match
     return None
 
-# ---------------------------------------------------------------------
-# Helper to retrieve a short context of top 3 hotels from the DB
-# ---------------------------------------------------------------------
+
+def get_relevant_faqs(message: str, top_k: int = 3) -> list:
+    """Return the most relevant FAQ entries based on keyword overlap."""
+    faqs = load_faqs()
+    message_lower = message.lower()
+    words = set(message_lower.split())
+    scored = []
+    for faq in faqs:
+        question_words = set(faq["question"].lower().split())
+        answer_words = set(faq["answer"].lower().split())
+        combined = question_words | answer_words
+        score = len(words & combined)
+        scored.append((score, faq))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [faq for score, faq in scored[:top_k] if score > 0]
+
+
 def get_hotel_context(db: Session) -> List[str]:
-    """Restituisce una lista di stringhe con le informazioni dei 3 hotel più economici."""
+    """Return a list of strings with the cheapest 3 hotels."""
     try:
         hotels = (
-            db.query(models.Hotel)
-            .order_by(models.Hotel.price.asc())
-            .limit(3)
-            .all()
+            db.query(models.Hotel).order_by(models.Hotel.price.asc()).limit(3).all()
         )
     except Exception:
         return []
     context = []
     for h in hotels:
-        dist = f", {h.distanceFromCenter}km dal centro" if getattr(h, "distanceFromCenter", None) is not None else ""
-        context.append(f"- {h.name} a {h.location}: €{h.price}/notte{dist}")
+        dist = (
+            f", {h.distanceFromCenter}km from center"
+            if getattr(h, "distanceFromCenter", None) is not None
+            else ""
+        )
+        context.append(f"- {h.name} in {h.location}: ${h.price}/night{dist}")
     return context
 
-# ---------------------------------------------------------------------
-# Endpoint del chatbot che utilizza Ollama per generare le risposte
-# ---------------------------------------------------------------------
+
+def find_hotels_in_message(db: Session, message: str) -> List[str]:
+    """Search for hotels mentioned in the user's message using partial/fuzzy matching."""
+    words = [w.strip() for w in message.split() if len(w.strip()) > 2]
+    if not words:
+        return []
+
+    matched_hotels = []
+    seen_ids = set()
+
+    # Strategy 1: Search for multi-word combinations (e.g., "Aura Hotel")
+    for i in range(len(words)):
+        for j in range(i + 1, min(i + 4, len(words) + 1)):
+            phrase = " ".join(words[i:j])
+            try:
+                results = (
+                    db.query(models.Hotel)
+                    .filter(models.Hotel.name.ilike(f"%{phrase}%"))
+                    .limit(5)
+                    .all()
+                )
+                for h in results:
+                    if h.id not in seen_ids:
+                        seen_ids.add(h.id)
+                        dist = (
+                            f", {h.distanceFromCenter}km from center"
+                            if getattr(h, "distanceFromCenter", None) is not None
+                            else ""
+                        )
+                        desc = getattr(h, "description", "")
+                        desc_short = (
+                            f". {desc[:100]}..."
+                            if desc and len(desc) > 100
+                            else f". {desc}"
+                            if desc
+                            else ""
+                        )
+                        images = getattr(h, "images", None)
+                        img_info = ""
+                        if images:
+                            try:
+                                img_list = (
+                                    json.loads(images)
+                                    if isinstance(images, str)
+                                    else images
+                                )
+                                if img_list:
+                                    img_info = f" Images available: {len(img_list)}"
+                            except Exception:
+                                pass
+                        matched_hotels.append(
+                            f"- {h.name} in {h.location}: ${h.price}/night{dist}{desc_short}{img_info}"
+                        )
+            except Exception:
+                pass
+
+    # Strategy 2: Single word search if no multi-word matches
+    if not matched_hotels:
+        for word in words:
+            try:
+                results = (
+                    db.query(models.Hotel)
+                    .filter(
+                        (models.Hotel.name.ilike(f"%{word}%"))
+                        | (models.Hotel.location.ilike(f"%{word}%"))
+                    )
+                    .limit(5)
+                    .all()
+                )
+                for h in results:
+                    if h.id not in seen_ids:
+                        seen_ids.add(h.id)
+                        dist = (
+                            f", {h.distanceFromCenter}km from center"
+                            if getattr(h, "distanceFromCenter", None) is not None
+                            else ""
+                        )
+                        desc = getattr(h, "description", "")
+                        desc_short = (
+                            f". {desc[:100]}..."
+                            if desc and len(desc) > 100
+                            else f". {desc}"
+                            if desc
+                            else ""
+                        )
+                        matched_hotels.append(
+                            f"- {h.name} in {h.location}: ${h.price}/night{dist}{desc_short}"
+                        )
+            except Exception:
+                pass
+
+    return matched_hotels
+
+
+def get_all_hotels_summary(db: Session) -> List[str]:
+    """Return a concise summary of ALL hotels in the database."""
+    try:
+        hotels = db.query(models.Hotel).all()
+    except Exception:
+        return []
+    context = []
+    for h in hotels:
+        dist = (
+            f", {h.distanceFromCenter}km from center"
+            if getattr(h, "distanceFromCenter", None) is not None
+            else ""
+        )
+        context.append(f"- {h.name} in {h.location}: ${h.price}/night{dist}")
+    return context
+
+
 @app.post("/chatbot")
 def chatbot_endpoint(request: schemas.ChatRequest, db: Session = Depends(get_db)):
     user_message = request.message.strip()
     msg_lower = user_message.lower()
 
-    # 1. Saluti rapidi - solo se il messaggio è principalmente un saluto (1-2 parole non molto lunghe)
-    greetings = ["hello", "hi", "ciao", "salve", "buongiorno", "buonasera"]
     words_in_message = msg_lower.split()
-    # Se il messaggio ha 2 o meno parole E contiene un saluto, trattalo come saluto puro
+    greetings = ["hello", "hi", "ciao", "hey", "greetings"]
     if len(words_in_message) <= 2 and any(g in msg_lower for g in greetings):
         return {
-            "answer": "Ciao! Sono l'assistente di Hotel.io. Come posso aiutarti a trovare l'hotel perfetto?",
+            "answer": "Hello! I'm your Hotel.io travel assistant. I can help you find hotels, plan trips, and answer questions about our platform. What would you like to know?",
             "source": "assistant",
             "context": [],
+            "faq_suggestions": [],
         }
 
-    # 2. Contesto hotel dal DB
-    hotels_context = get_hotel_context(db)
-    context_text = "\n".join(hotels_context) if hotels_context else ""
+    # Priority 1: Search for specific hotels mentioned in the user's message
+    specific_hotels = find_hotels_in_message(db, user_message)
 
-    # 3. FAQ specifiche
+    # Priority 2: If no specific hotel found, get all hotels summary for general context
+    if specific_hotels:
+        context_text = "\n".join(specific_hotels)
+        hotels_context = specific_hotels
+    else:
+        all_hotels = get_all_hotels_summary(db)
+        context_text = "\n".join(all_hotels) if all_hotels else ""
+        hotels_context = all_hotels
+
     similar_faq = find_similar_faq(user_message)
     if similar_faq:
-        return {"answer": similar_faq["answer"], "source": "faq", "context": []}
+        all_faqs = load_faqs()
+        other_faqs = [f for f in all_faqs if f["question"] != similar_faq["question"]]
+        return {
+            "answer": similar_faq["answer"],
+            "source": "faq",
+            "context": hotels_context,
+            "faq_suggestions": other_faqs[:3],
+        }
 
-    # 4. Generazione risposta con Ollama
     system_prompt = (
-        "Sei un assistente di viaggio amichevole e conciso. "
-        "Rispondi in 2-3 frasi in italiano. Puoi consigliare hotel, destinazioni, "
-        "attività turistiche e dare suggerimenti di viaggio. Se l'utente chiede di "
-        "hotel specifici, dai suggerimenti basandoti sui dati disponibili."
-        "Comprendi tutti gli hotel nel database e usa queste informazioni per rispondere."
+        "You are a friendly, concise travel assistant for Hotel.io, a hotel booking platform. "
+        "Answer the user's question clearly in 2-3 sentences. "
+        "You can recommend hotels, destinations, tourist activities, and give travel tips. "
+        "If the user asks about a specific hotel, check the hotel data provided below. "
+        "If the hotel IS listed in the available hotels data, confirm it exists and provide its details. "
+        "NEVER say a hotel is not listed if it appears in the available hotels data. "
+        "Always be helpful and travel-focused."
     )
+
     try:
         import ollama
     except ImportError:
-        raise Exception("Il pacchetto 'ollama' non è installato. Aggiungilo a requirements.txt e installalo.")
+        raise Exception(
+            "The 'ollama' package is not installed. Add it to requirements.txt and install it."
+        )
+
     try:
-        full_prompt = f"{system_prompt}\n\nDomanda: {user_message}\n"
+        full_prompt = f"{system_prompt}\n\nUser question: {user_message}\n"
         if context_text:
-            full_prompt += f"\nHotel disponibili:\n{context_text}\n"
-        print(f"[DEBUG] Calling Ollama with model 'gemma3:4b'...")
+            if specific_hotels:
+                full_prompt += f"\nHotels matching your query:\n{context_text}\n"
+            else:
+                full_prompt += f"\nAll available hotels on Hotel.io:\n{context_text}\n"
+
         ollama_resp = ollama.generate(
             model="gemma3:4b",
             prompt=full_prompt,
             options={"temperature": 0.7, "num_predict": 150},
         )
-        answer = ollama_resp.get('response', '').strip() or "Non ho capito, riprova!"
-        print(f"[DEBUG] Ollama response received: {answer[:50]}...")
-        return {"answer": answer, "source": "ollama", "context": hotels_context}
+        answer = (
+            ollama_resp.get("response", "").strip()
+            or "I'm sorry, I couldn't generate a response. Please try again."
+        )
+
+        relevant_faqs = get_relevant_faqs(user_message, top_k=3)
+
+        return {
+            "answer": answer,
+            "source": "ollama",
+            "context": hotels_context,
+            "faq_suggestions": relevant_faqs,
+        }
     except Exception as e:
         import traceback
+
         print(f"[ERROR] Ollama error: {e}")
         print(f"[ERROR] Full traceback:\n{traceback.format_exc()}")
-        fallback = "Sono l'assistente di Hotel.io! Prova a chiedermi di hotel, destinazioni o consigli di viaggio."
-        return {"answer": fallback, "source": "fallback", "context": hotels_context}
+        fallback = "I'm sorry, I'm having trouble connecting right now. I can help you with travel tips, hotel recommendations, and questions about Hotel.io. What would you like to know?"
+        relevant_faqs = get_relevant_faqs(user_message, top_k=3)
+        return {
+            "answer": fallback,
+            "source": "fallback",
+            "context": hotels_context,
+            "faq_suggestions": relevant_faqs,
+        }
 
 
 if __name__ == "__main__":

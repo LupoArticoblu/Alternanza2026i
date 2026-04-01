@@ -30,5 +30,21 @@
     {
         "question": "Do hotels include breakfast?",
         "answer": "It depends on the hotel and room type. Check the hotel details page for breakfast inclusion. Some hotels offer it as an add-on option."
+    },
+    {
+        "question": "What are the best destinations for a weekend getaway?",
+        "answer": "Popular weekend getaways include coastal towns, historic cities, and countryside retreats. Ask our chatbot for personalized recommendations based on your location and interests!"
+    },
+    {
+        "question": "How can I find budget-friendly hotels?",
+        "answer": "Use our price filter to set your maximum budget, or ask our chatbot for affordable hotel suggestions. We also highlight the cheapest options in every destination."
+    },
+    {
+        "question": "Can I get travel recommendations for a specific city?",
+        "answer": "Absolutely! Tell our chatbot which city you're visiting and it will suggest hotels, attractions, restaurants, and local tips tailored to your interests."
+    },
+    {
+        "question": "What amenities should I look for in a hotel?",
+        "answer": "Common amenities include free WiFi, parking, breakfast, pool, and gym. Use our filters to find hotels with the amenities that matter most to you."
     }
 ]
