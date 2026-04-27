@@ -1,3 +1,7 @@
+/*
+  Componente UI per il chatbot integrato.
+  Gestisce invio/ricezione messaggi, storico locale e suggerimenti FAQ.
+*/
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';

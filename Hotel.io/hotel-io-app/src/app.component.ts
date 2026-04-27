@@ -1,3 +1,8 @@
+/*
+  Componente root dell'app Angular.
+  Gestisce il layout principale (navbar, footer), lo stato delle viste,
+  i filtri di ricerca e l'interazione con il `HotelService`.
+*/
 import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';

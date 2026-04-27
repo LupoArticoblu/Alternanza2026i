@@ -1,3 +1,7 @@
+/*
+  Configurazione dell'app Angular: registra provider per il router,
+  l'HTTP client e le impostazioni di change detection.
+*/
 import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';

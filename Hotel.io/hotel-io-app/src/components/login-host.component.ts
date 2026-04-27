@@ -1,3 +1,7 @@
+/*
+  Componente per il login/registrazione degli host e per la dashboard host.
+  Permette la gestione delle proprietà (creazione, modifica, cancellazione).
+*/
 import {Component, EventEmitter, inject, Output, signal, computed, NgZone} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
@@ -370,7 +374,9 @@ export class LoginHostComponent {
       const existing = this.hotels().find(h => h.id === this.editingId);
 
       if (existing){
-        this.hotelService.updateHotel({ ...existing, ...hotelData});
+        // Manteniamo la stessa istanza dell'hotel aggiornando le proprietà
+        Object.assign(existing, hotelData);
+        this.hotelService.updateHotel(existing);
       }
     } else {
       //ne creiamo uno

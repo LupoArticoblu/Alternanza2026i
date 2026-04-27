@@ -1,3 +1,7 @@
+/*
+  Componente semplice per visualizzare valutazioni a stelle.
+  Riceve un rating numerico e mostra le stelle riempite/vuote.
+*/
 import { Component, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 

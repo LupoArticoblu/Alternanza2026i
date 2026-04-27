@@ -1,3 +1,7 @@
+/*
+  Servizio principale per gestire gli hotel, l'autenticazione e le recensioni.
+  Fornisce metodi per fetch/update/delete hotel, login/registrazione e analisi AI.
+*/
 import { Injectable, signal, computed, inject, model } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 

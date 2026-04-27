@@ -1,3 +1,7 @@
+/*
+  Componente che inizializza l'app standalone.
+  Contiene logica minima per il titolo e la visibilità del chatbot.
+*/
 import { Component, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ChatbotComponent } from '../components/chatbot.component';

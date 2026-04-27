@@ -1,3 +1,6 @@
+# Punto d'ingresso del backend FastAPI.
+# Definisce gli endpoint REST per utenti, hotel, recensioni, like e il
+# servizio chatbot; configura CORS e avvia migrazioni leggere al boot.
 import os, sys
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))

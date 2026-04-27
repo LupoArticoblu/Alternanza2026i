@@ -1,3 +1,4 @@
+# Dipendenze Python per il backend (FastAPI, DB, LLM e utilità)
 fastapi
 uvicorn
 sqlalchemy

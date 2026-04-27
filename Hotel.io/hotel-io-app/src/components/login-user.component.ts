@@ -1,3 +1,7 @@
+/*
+  Componente per il login/registrazione degli utenti (guest).
+  Gestisce autenticazione e segnala il risultato al componente genitore.
+*/
 import { Component, EventEmitter, Output, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';

@@ -1,3 +1,7 @@
+/*
+  Componente che mostra i dettagli di un singolo hotel,
+  incluse immagini, descrizione, recensioni e form per inserire recensioni.
+*/
 import { Component, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';

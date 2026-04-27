@@ -1,4 +1,5 @@
-#qui inseriamo le classi per la serializzazione
+# Schemi Pydantic usati per la validazione e serializzazione dei dati
+# scambiati via API: utenti, hotel, recensioni e messaggi per il chatbot.
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 

@@ -1,3 +1,7 @@
+# Definizione dei modelli ORM per il backend:
+# - `User`, `Hotel`, `Review`, `Like`
+# Include inoltre helper per la normalizzazione degli id e
+# un TypeDecorator per serializzare liste JSON in colonne TEXT.
 from sqlalchemy import Column, String, Float, ForeignKey, Integer, Text, TypeDecorator
 from sqlalchemy.orm import relationship
 from database import Base

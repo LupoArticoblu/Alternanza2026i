@@ -1,3 +1,7 @@
+/*
+    Servizio per comunicare con l'endpoint chatbot del backend.
+    Espone `sendMessage` che invia la richiesta e restituisce la risposta.
+*/
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';

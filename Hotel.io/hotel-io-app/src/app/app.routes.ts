@@ -1,3 +1,7 @@
+/*
+	Definizione delle rotte dell'applicazione. Attualmente espone
+	la route per il componente `ChatbotComponent`.
+*/
 import { Routes } from '@angular/router';
 // Import the standalone Chatbot component
 // Updated import to reflect new location of ChatbotComponent
