@@ -70,7 +70,3 @@ Contribuire
 
 - Fork/branch -> commit descrittivi -> pull request verso `main`.
 - Aggiungere test e aggiornare la documentazione.
-
-Licenza
-
-- Specificare qui la licenza (es. MIT) e il contatto per i contributi.
