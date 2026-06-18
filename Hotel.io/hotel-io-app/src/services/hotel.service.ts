@@ -32,6 +32,7 @@ export interface Hotel {
   isLiked: boolean;
   reviews: Review[];
   distanceFromCenter?: number;
+  owner_id?: string;
   aiAnalysis?: AIAnalysis;
   isAnalyzing?: boolean;
 }

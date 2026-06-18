@@ -142,7 +142,7 @@ import { StarRatingComponent } from './star-rating.component';
                  <button 
                   (click)="analyzeWithAI()"
                   [disabled]="hotel().isAnalyzing"
-                  class="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg shadow transition-all disabled:opacity-70 disabled:cursor-not-allowed text-sm font-medium">
+                  class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow transition-all disabled:opacity-70 disabled:cursor-not-allowed text-sm font-medium">
                   @if (hotel().isAnalyzing) {
                     <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
